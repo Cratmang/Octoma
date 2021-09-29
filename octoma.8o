@@ -1,17 +1,78 @@
+#######
+#
+#   OCTOMA
+#   By Cratmang
+#
+#######
 
 
 : main
-
+	hires
+	drawMap
 
 
 : health 1 0 0
 
-: playerPos 5 5  # x y
+: playerPos 11 14  # x y
 
 : level 0 0 0
 
 : exp 0 0 0
 
+:const DRAW_START_X 0
+:const DRAW_START_Y 0
+
+: drawMap
+	v0 := DRAW_START_X  v1 := DRAW_START_Y
+	i := playerPos
+	load va - vb
+	va -= 3	vb -= 3
+	
+	loop if v1 < 56 begin
+		loop if v0 < 56 begin
+			drawTile
+			va += 1
+			v0 += 8
+			again
+		end
+		v0 := 0
+		va -= 7
+		vb += 1
+		v1 += 8
+		again
+	end
+;
+
+:const TILE_SIZE 8
+:const MAP_WIDTH 25
+
+: drawTile
+	#v0 =screen X, v1 = screen Y, va = X, vb = Y, vc = 25 (Width of the map), vd
+	i := map
+	vc := MAP_WIDTH
+	vd := 0
+	loop if vd < vb begin
+		i += vc
+		vd += 1
+		again 
+	end
+	i += va
+	load ve - ve
+	#We now have the tile ID
+	i := tileset
+	vc := TILE_SIZE #Tile size. May need to be doubled if we decide to switch to 2 layers for the map colour
+	vd := 0
+	loop if vd < ve begin
+		i += vc
+		vd += 1
+		again 
+	end
+	
+	
+	#This may seem wasteful (and it kind of is), but this makes the doors white
+	if ve > 4 begin plane 1 sprite v0 v1 8 end
+	if ve < 7 begin plane 2 sprite v0 v1 8 end
+;
 
 : map
 # 0 = Blank space
@@ -25,6 +86,7 @@
 # 8 = Princess's space (You win!)
 # 9 = Locked Door
 # 13 = Blank space (impassable)
+
 #      |                                                          |
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 10 10 10 10 10 10 10 10 10
 13 13 13 13 13 13 13 13 13 13 19 20 21 22 23 13 10 10 10 10 10 10 10 10 10
@@ -32,11 +94,22 @@
 #-------------------------------------------------------------------------- The above spacing is to ensure we don't have to render parts of the map that don't exist
 13 13 13 28 1  1  1  13 13 14 1  15 5  15 1  14 10 10 10 10 10 10 10 10 10
 13 13 13 1  1  30 1  13 13 29 15 14 2  14 15 29 10 10 10 10 10 10 10 10 10
-13 13 13 1  1  2  1  13 13 29 29 29 3  29 29 13 10 10 10 5  10 10 10 10 10
-13 13 13 1  1  2  1  13 13 13 13 28 3  28 28 28 10 2  2  2  2  2  10 10 10
-13 13 13 13 13 13 13 13 13 13 13 1  2  1  1  1  10 2  29 29 1  2  10 10 10
-13 13 13 13 13 13 13 13 13 13 13 1  2  2  2  2  2  2  10 10 29 2  10 10 10
-13 13 13 13 13 13 13 13 13 13 13 29 29 29 29 29 1  7  7  7  7  7  2  13 13 13
+13 13 13 1  1  2  1  13 13 13 29 29 3  29 29 13 10 10 10 5  10 10 10 10 10
+13 13 13 1  1  2  1  1  1  13 13 28 3  28 28 28 10 2  2  2  2  2  10 10 10
+13 13 13 1  1  2  2  1  1  13 13 1  2  1  1  1  10 2  29 29 1  2  10 10 10
+13 13 13 1  1  1  2  1  1  28 13 1  2  2  2  2  2  2  10 10 29 2  10 10 10
+13 13 13 29 1  1  2  1  1  1  13 29 29 29 29 1  7  7  7  7  7  2  13 13 13
+13 13 13 13 1  1  2  1  1  1  28 10 10 10 10 10 29 7  7  7  7  2  13 13 13
+13 13 13 13 1  1  2  1  1  2  2  2  2  2  1  1  7  7  7  7  1  2  13 13 13
+13 13 13 13 1  1  2  1  1  2  16 17 18 2  1  1  1  1  1  1  1  2  13 13 13
+13 13 13 13 29 1  2  2  2  2  12 5  12 2  2  2  2  2  2  2  2  2  13 13 13
+13 13 13 13 13 1  1  1  1  2  2  2  2  2  1  1  1  7  1  1  7  7  13 13 13
+13 13 13 13 13 29 29 29 1  1  1  1  1  1  1  29 29 29 7  7  7  29 13 13 13
+13 13 13 13 13 13 13 13 29 29 29 29 29 29 29 13 13 13 29 29 29 13 13 13 13
+13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
+13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
+
+
 
 : tileset
 # Each tile is 8x8 pixels, using either blue or pink. 8 numbers per tile.
@@ -72,9 +145,9 @@
 #13 = Blank Space (impassable)
 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
 #14 = Tower
-0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+0x18 0x7E 0x0C 0x7E 0x18 0x7E 0x30 0x7E
 #15 = Tower Top
-0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+0x99 0xFF 0x00 0x7E 0x2C 0x6E 0x3C 0x7E
 #16, 17, 18 = Temple roof
 0x00 0x00 0x00 0x03 0x0C 0x33 0xCF 0x00
 0x00 0x3C 0xC3 0x18 0xE7 0xDB 0xE7 0xFF
