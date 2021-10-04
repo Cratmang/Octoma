@@ -7,12 +7,12 @@
 
 
 
-:const DRAW_START_X 0
-:const DRAW_START_Y 0
-#:calc DRAW_CENTER_X { DRAW_START_X + 24} This throws an error, and I don't know how  to resolve it  right now. So instead I'm using a const that I will need  to update  later
-#:calc DRAW_CENTER_Y { DRAW_START_Y + 24}
-:const DRAW_CENTER_X 24
-:const DRAW_CENTER_Y 24
+:const DRAW_START_X 4
+:const DRAW_START_Y 4
+:calc DRAW_CENTER_X { DRAW_START_X + 24 }
+:calc DRAW_CENTER_Y { DRAW_START_Y + 24 }
+:calc DRAW_END_X { DRAW_START_X + ( 8 * 7 ) }
+:calc DRAW_END_Y { DRAW_START_Y + ( 8 * 7 ) }
 
 :const TILE_SIZE 16
 :calc TILE_HALF { TILE_SIZE / 2 }
@@ -20,6 +20,50 @@
 
 : main
 	hires
+	
+	#Draw Frame 
+	i := frame-corner-nw
+	v0 := 0 v1 := 2
+	plane 1 sprite v0 v1 2
+	plane 2 sprite v0 v1 2
+	i := frame-corner-sw
+	v0 := 0 v1 := DRAW_END_Y
+	plane 1 sprite v0 v1 2
+	plane 2 sprite v0 v1 2
+	i := frame-corner-ne
+	v0 := DRAW_END_X v1 := 2
+	plane 1 sprite v0 v1 2
+	plane 2 sprite v0 v1 2
+	i := frame-corner-se
+	v0 := DRAW_END_X v1 := DRAW_END_Y
+	plane 1 sprite v0 v1 2
+	plane 2 sprite v0 v1 2
+	
+	i := frame-h
+	v0 := DRAW_START_X
+	v1 := 1
+	loop
+		plane 1 sprite v0 v1 1
+		plane 2 sprite v0 v1 1
+		v0 += 8
+		if v0 == DRAW_END_X begin
+			v0 := DRAW_START_X
+			v1 += 61
+		end
+	if v1 < 64 then again
+	
+	i := frame-v
+	v0 := 1
+	v1 := DRAW_START_Y
+	loop
+		plane 1 sprite v0 v1 1
+		plane 2 sprite v0 v1 1
+		v1 += 1
+		if v1 == DRAW_END_Y begin
+			v1 := DRAW_START_Y
+			v0 += 61
+		end
+	if v0 < 64 then again
 	
 	#Draw Player sprite in center of the screen
 	i := playerSprite
@@ -32,93 +76,159 @@
 	plane 2
 	sprite v0 v1 8
 	
-	
 	i := playerPos
 	load v8 - v9
 	drawMap
 	
+	#v3 and v4 represent the X and Y location that the player will try to access
 	v3 := v8 v4 := v9
+	
+	#v7 will check to see if the player has made an input.
+	v7 := 0
+	
+	
 	loop
-		
-		#v3 := key if v3 key begin
-		#v0 := OCTO_KEY_W if v0 key then v9 -= 1
-		#v0 := OCTO_KEY_S if v0 key then v9 += 1
-		#v0 := OCTO_KEY_A if v0 key then v8 -= 1
-		#v0 := OCTO_KEY_D if v0 key then v8 += 1
 		
 		v0 := OCTO_KEY_W if v0 key begin
 			v4 -= 1
-			moveMap
-			#drawMap
-			#v9 -= 1
-			#moveMap
+			moveP
 		end
 		v0 := OCTO_KEY_A if v0 key begin
 			v3 -= 1
-			moveMap
-			#drawMap
-			#v8 -= 1
-			#moveMap
+			moveP
 		end
 		v0 := OCTO_KEY_S if v0 key begin
 			v4 += 1
-			moveMap
-			#drawMap
-			#v9 += 1
-		#	moveMap
+			moveP
 		end
 		v0 := OCTO_KEY_D if v0 key begin
 			v3 += 1
-			moveMap
-			#drawMap
-			#v8 += 1
-			#moveMap
+			moveP
 		end
 		
 		#Delay to prevent the player from just ZOOMING across the map
 		# Copied from the default Octo example project. I only barely understand how it works.
-    vf := 7
-    delay := vf
-		loop
-      vf := delay
-      if vf != 0 then
-    again
+    if v7 != 0 begin
+			vf := 7
+			delay := vf
+			loop
+				vf := delay
+				if vf != 0 then
+			again
+			v7 := 0
+		end
 		
 	again
 	
-: checkCollision
-	# va and vb get tileID
-	# if 
-	
-	#va := v8 vb := v9
-	getTileID
-	
-	i := access
-	if ve < vf then ve := 0
-	
-	#We can probably just move this into MoveMap, although there is the thought that enemies will also use this
-	
-;
-	
-	
-: moveMap
+: moveP
 	
 	va := v3 vb := v4
 	getTileID
 	i := access load v0
 	if ve <= v0 begin
 		drawMap
-		v8 := v3
-		v9 := v4
+		v8 := v3 v9 := v4
+		va := v8 vb := v9
+		getTileID
+		if ve == 5 begin #Entering Dungeon
+			if v9 == 3 begin #Entering Daiouika Castle
+				v8 := 12
+				v9 := 81
+			end 
+			if v9 == 5 begin #Entering the Lost Caves
+				v8 := 12
+				v9 := 55
+			end 
+			if v9 == 13 begin #Entering Temple 8
+				v8 := 12
+				v9 := 25
+			end 
+		end 
+		if ve == 6 begin #Exiting Dungeon
+			if v9 == 81 begin #Daiouika Castle
+				v8 := 12
+				v9 := 4
+			end 
+			if v9 == 55 begin #Lost Caves
+				v8 := 19
+				v9 := 5
+			end 
+			if v9 == 25 begin #Temple 8
+				v8 := 11
+				v9 := 13
+			end 
+		end
+		
 		i := playerPos
 		save v8 - v9
 		drawMap
 		i := audio-step
-		v2 := 2
+		v2 := 3
+		v1 := 34 pitch := v1
 		audio buzzer := v2
 		
+		va := v8 vb := v9
+		getTileID
+		if ve == 9 begin # We found treasure!
+			
+			# Convert chest into opened chest.
+			ve := 10
+			save ve - ve
+			
+			# Get loot dropped
+			v1 := 50
+			if v9 == 33 begin
+				#Got the sword!
+				i := swordSprite
+				v0 := 66
+				plane 1 sprite v0 v1 10
+				v2 := 10 i += v2
+				plane 2 sprite v0 v1 10
+			end
+			if v9 == 46 begin
+				#Got the armor!
+				i := armourSprite
+				v0 := 75
+				plane 1 sprite v0 v1 8
+				v2 := 8 i += v2
+				plane 2 sprite v0 v1 8
+			end
+			if v9 > 58 begin
+				#Got the key from killing the wizard!
+				i := keySprite
+				v0 := 84
+				plane 1 sprite v0 v1 9
+				v2 := 9 i += v2
+				plane 2 sprite v0 v1 9
+				i := access
+				load v0
+				v0 += 1
+				save v0
+			end
+			
+			#Play victory jingle!
+			i := audio-note
+			v1 := 96 v2 := 12
+			pitch := v1
+			audio buzzer := v2
+			vf := 7
+			delay := vf
+			loop
+				vf := delay
+				if vf != 0 then
+			again
+			v1 := 120
+			pitch := v1
+			audio buzzer := v2
+		end
+		
+		
 	end
+	
+	
+	
 	v3 := v8 v4 := v9
+	V7 := 1
 	
 ;
 
@@ -133,9 +243,43 @@
 
 : exp 0 0 0
 
-: access 10 
+: access 10
 # This is the highest ID tile that the player (and enemies) can walk through.
 # If the player gets the key from killing the Wizard, they can also walk through the locked door.
+
+
+### ENEMY STATS
+: enemies
+#X  Y  ID HP STRENGTH
+ 12 66 6  10 7 # Reserved for the Wizard!
+ 0  0  0  0  0
+ 0  0  0  0  0 
+ 0  0  0  0  0
+ 0  0  0  0  0
+
+: bestiary
+#Example Entry: 3 HP, 5 Strength
+
+#0 = Dead or non-existant
+0 0
+
+#1 = Shrimp
+1 1
+
+#2 = Lobster
+2 3
+
+#3 = Waterbear
+4 5
+
+#4 = Skull
+1 10
+
+#5 = Squid
+5 6
+
+#6 = Wizard
+10 7
 
 
 ### DRAW MAP AND TILES
@@ -162,7 +306,7 @@
 			v0 += 8
 			again
 		end
-		v0 := 0
+		v0 := DRAW_START_X
 		va -= 7
 		vb += 1
 		v1 += 8
@@ -224,10 +368,10 @@
 13 13 13 13 13 1  1  1  1  2  2  2  2  2  1  1  1  7  1  1  7  7  13 13 13
 13 13 13 13 13 29 29 29 1  1  1  1  1  1  1  29 29 29 7  7  7  29 13 13 13
 13 13 13 13 13 13 13 13 29 29 29 29 29 29 29 13 13 13 29 29 29 13 13 13 13
-#------|----------------------------------------------------------|------- 17
+#------|----------------------------------------------------------|------- 16
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
-#------|----------------------------------------------------------|------- 19
+#------|----------------------------------------------------------|------- 18
 # TEMPLE
 13 13 13 13 13 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 13 13 13 13 13 
 13 13 13 13 13 32 32 32 32 32 0  0  0  0  0  32 32 32 32 32 13 13 13 13 13
@@ -243,23 +387,23 @@
 13 13 13 13 13 32 32 0  0  0  32 32 32 32 32 0  0  0  32 32 13 13 13 13 13
 13 13 13 13 13 32 0  0  0  32 32 32 32 32 32 32 0  0  0  32 13 13 13 13 13
 13 13 13 13 13 32 0  0  32 32 32 0  0  0  32 32 32 0  0  32 13 13 13 13 13
-13 13 13 13 13 32 0  0  32 32 32 0  8  0  32 32 32 0  0  32 13 13 13 13 13
+13 13 13 13 13 32 0  0  32 32 32 0  9  0  32 32 32 0  0  32 13 13 13 13 13
 13 13 13 13 13 32 0  0  32 32 32 0  0  0  32 32 32 0  0  32 13 13 13 13 13
 13 13 13 13 13 32 0  0  0  32 32 32 0  32 32 32 0  0  0  32 13 13 13 13 13
 13 13 13 13 13 32 32 0  0  0  0  0  0  0  0  0  0  0  32 32 13 13 13 13 13
 13 13 13 13 13 32 32 32 0  0  0  0  0  0  0  0  0  32 32 32 13 13 13 13 13
 13 13 13 13 13 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 13 13 13 13 13
-#------|----------------------------------------------------------|------- 39
+#------|----------------------------------------------------------|------- 38
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
-#------|----------------------------------------------------------|------- 41
+#------|----------------------------------------------------------|------- 40
 # CAVE
 13 13 13 13 29 29 13 13 29 29 29 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 1  1  13 13 1  1  1  13 13 13 13 29 29 29 29 29 29 13 13 13 13
 13 13 13 29 1  1  13 29 1  13 1  13 13 13 13 1  1  1  1  1  1  29 13 13 13
 13 13 13 1  1  1  13 1  1  13 1  29 29 29 13 1  1  13 29 1  1  1  13 13 13
 13 13 13 1  1  29 13 1  29 13 1  1  1  1  29 29 1  13 1  1  1  1  13 13 13
-13 13 13 1  1  31 13 1  1  29 29 29 8  29 1  1  1  13 1  29 29 29 13 13 13
+13 13 13 1  1  31 13 1  1  29 29 29 9  29 1  1  1  13 1  29 29 29 13 13 13
 13 13 13 1  1  1  13 1  1  1  1  1  29 1  1  1  1  13 1  1  1  1  13 13 13
 13 13 13 13 1  1  29 13 1  1  1  1  1  1  1  1  13 13 13 13 1  1  13 13 13
 13 13 13 13 1  1  1  29 13 29 29 29 29 29 29 29 13 13 13 29 1  1  13 13 13
@@ -269,11 +413,11 @@
 13 13 13 13 13 13 13 13 13 13 13 1  1  13 13 13 1  1  1  1  13 13 13 13 13
 13 13 13 13 13 13 13 13 13 13 13 13 1  13 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 13 13 13 13 13 13 13 13 6  13 13 13 13 13 13 13 13 13 13 13 13
-#------|----------------------------------------------------------|------- 56
+#------|----------------------------------------------------------|------- 55
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
-#------|----------------------------------------------------------|------- 59
+#------|----------------------------------------------------------|------- 58
 # CASTLE DAIOUIKA
 13 13 13 13 13 13 13 13 13 13 13 13 33 13 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 13 13 13 13 13 13 13 33 8  33 13 13 13 13 13 13 13 13 13 13 13
@@ -281,7 +425,7 @@
 13 13 13 13 13 13 13 13 13 33 0  0  4  0  0  33 13 13 13 13 13 13 13 13 13
 13 13 13 33 33 33 33 33 33 33 33 33 11 33 33 33 33 33 33 33 33 33 13 13 13
 13 13 13 33 0  4  0  33 33 0  0  0  4  0  0  0  33 33 0  4  0  33 13 13 13
-13 13 13 33 0  4  0  0  0  0  0  0  4  0  0  0  0  0  0  4  0  33 13 13 13
+13 13 13 33 0  4  0  0  0  0  0  0  4  0  9  0  0  0  0  4  0  33 13 13 13
 13 13 13 33 0  4  0  33 33 0  0  0  4  0  0  0  33 33 0  4  0  33 13 13 13
 13 13 13 33 0  4  0  33 33 0  0  0  4  0  0  0  33 33 0  4  0  33 13 13 13
 13 13 13 33 0  4  0  33 33 33 33 33 4  33 33 33 33 33 0  4  0  33 13 13 13
@@ -294,23 +438,20 @@
 13 13 13 33 0  4  0  33 33 0 12  0  4  0  12 0  33 33 0  4  0  33 13 13 13
 13 13 13 33 0  4  0  33 33 0  0  0  4  0  0  0  33 33 0  4  0  33 13 13 13
 13 13 13 33 0  4  0  0  0  0 12  0  4  0  12 0  0  0  0  4  0  33 13 13 13
-13 13 13 33 0  4  0  33 33 0  0  0  4  0  0  0  11 11 0  4  0  33 13 13 13
-13 13 13 33 0  4  0  33 33 0 12  0  4  0  12 0  11 11 0  4  0  33 13 13 13
+13 13 13 33 0  4  0  33 33 0  0  0  4  0  0  0  33 33 0  4  0  33 13 13 13
+13 13 13 33 0  4  0  33 33 0 12  0  4  0  12 0  33 33 0  4  0  33 13 13 13
 13 13 13 33 33 33 33 33 33 0  0  0  4  0  0  0  33 33 33 33 33 33 13 13 13
 13 13 13 13 13 13 13 13 33 33 33 33 6  33 33 33 33 13 13 13 13 13 13 13 13
-#------|----------------------------------------------------------|------- 82
+#------|----------------------------------------------------------|------- 81
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 
 
+### SPRITES
+# Each sprite is 8x8 pixels, and is drawn in two layers: Pink, then Blue. Overlapping pixels turn white.
 
 : tileset
-# Each tile is 8x8 pixels, using either blue or pink. 8 numbers per tile.
-# If there's enough space and time, I'll adjust the code to 16 numbers per tile so that
-#   all tiles can use blue, pink, and white at the same time.
-
-#TO-DO: Adjust tile drawer to draw two layer tiles.
 
 #0 = Blank Space
 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
@@ -442,34 +583,75 @@
 0x02 0x32 0x7A 0x6A 0xB7 0x82 0x22 0xC2
 0x02 0x32 0x52 0x6A 0xB0 0xE8 0x2E 0xC0
 
-: treasure
-0x00 0x7C 0x3E 0x08 0x3E 0x3E 0x3E 0x00 
-0x00 0xFC 0x7E 0x80 0xF6 0xFE 0x7E 0x00
+: enemiesSprites
+#1 = Shrimp
+0x00 0x3C 0x39 0x76 0x68 0x46 0x20 0x00
+0x00 0x14 0x00 0x00 0x00 0x00 0x00 0x00
 
-#Claimed
-0x00 0x30 0x00 0x00 0x3E 0x3E 0x3E 0x00 
-0x00 0x00 0xFC 0x82 0xFE 0xFE 0x7E 0x00 
+#2 = Lobster
+0x00 0x0E 0x1F 0x3F 0x0C 0x5F 0x5C 0x3F
+0x00 0x00 0x00 0x00 0x00 0x57 0x54 0x07
 
-: princess #Screw it, I'm going to go to double colour tiles now.
-0x00 0x22 0x71 0x5A 0xB1 0x84 0x20 0x6E 
-0x0E 0x3E 0x29 0x5A 0xB1 0xF4 0x38 0x6E
+#3 = Waterbear
+0x00 0x3E 0x7F 0xFF 0xFF 0xFF 0x5E 0x55
+0x00 0x36 0x5B 0xEB 0xAB 0xEB 0x14 0x15
 
-: enemies
-0
-#TO DO
+#4 = Skull
+0x38 0x7C 0xBA 0xBA 0x7C 0x44 0x54 0x38
+0x38 0x7C 0xBA 0x92 0x7C 0x00 0x54 0x38
 
+#5 = Squid
+0x0C 0x1E 0x3F 0x80 0x9E 0x6C 0x92 0x7E
+0x0C 0x1E 0x03 0x8A 0x8E 0x04 0x80 0x58
+
+#6 = Wizard
+0x18 0x3C 0x7E 0xFF 0x18 0x3C 0xBD 0x66
+0x18 0x3C 0x7E 0xFF 0x24 0xBD 0x99 0x00
+
+#The artifacts kind of break the 8x8 rule, since they don't need to be drawn on a grid.
+
+: swordSprite #10 px
+0x10 0x18 0x10 0x18 0x10 0x18 0x3C 0x18 0x08 0x18 
+0x01 0x82 0x41 0x82 0x40 0x00 0x3C 0x08 0x18 0x18
+
+: armourSprite #8 px
+0x18 0x3C 0x66 0xDB 0xD3 0x66 0xFF 0x7E
+0x00 0x3C 0x7E 0x7E 0x7E 0x7E 0x3C 0x00
+
+: keySprite #9px
+0x08 0x1C 0x3E 0x14 0x1C 0x08 0x18 0x08 0x18
+0x08 0x1C 0x3E 0x00 0x1C 0x08 0x08 0x08 0x08
+
+
+# The frame that the world/map is drawn within.
+#  The corners are all 2x2 in white. The border is a single pixel line.
+
+: frame-corner-nw
+0x30 0x20
+
+: frame-corner-ne
+0xC0 0x40
+
+: frame-corner-sw
+0x20 0x30
+
+: frame-corner-se
+0x40 0xC0
+
+: frame-h
+0xFF 
+
+: frame-v
+0x80
+
+
+### AUDIO
 
 : audio-step
-3 5 32
+3 5 32 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
 
-
-
-
-
-
-
-
-
+: audio-note
+255 0 255 0 255 0 255 0 255 0 255 0 255 0 255 0
 
 
 
