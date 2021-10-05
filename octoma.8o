@@ -79,6 +79,7 @@
 	i := playerPos
 	load v8 - v9
 	drawMap
+	drawEnemies
 	
 	#v3 and v4 represent the X and Y location that the player will try to access
 	v3 := v8 v4 := v9
@@ -120,20 +121,22 @@
 		
 	again
 	
+	
+	
 : moveP
 	
 	va := v3 vb := v4
-	getTileID
-	i := access load v0
-	if ve <= v0 begin
-		
-		drawMap
-		i := playerPos
-		save v3 - v4
-		drawEnemies
+	#getTileID
+	#i := access load v0
+	checkCollision
+	#if ve <= v0 begin
+	if vd != 2 begin
 		
 		i := playerPos
 		load v8 - v9
+		drawMap
+		drawEnemies
+		v8 := v3 v9 := v4
 		va := v8 vb := v9
 		getTileID
 		if ve == 5 begin #Entering Dungeon
@@ -164,9 +167,58 @@
 				v9 := 13
 			end 
 		end
-		
+	
 		i := playerPos
 		save v8 - v9
+		
+		#Enemy movement
+		# Loop through each enemy
+		#  Check where the player is
+		#  Move toward the player
+		#    Movement needs to account for walls
+		v7 := 0
+		loop
+			i := enemies
+			i += v7
+			load va - vc
+			load v3 - v4
+			v4 -= v9
+			v4 += 5
+			if v4 < 10 begin
+				v3 -= v8
+				v3 += 5
+				if v3 < 10 begin			
+					
+					if v4 > 5 begin
+						vb -= 1
+						checkCollision
+						if vd == 2 then vb += 1
+					end
+					if v4 < 5 begin
+						vb += 1
+						checkCollision
+						if vd == 2 then vb -= 1
+					end
+					if v3 > 5 begin
+						va -= 1
+						checkCollision
+						if vd == 2 then va += 1
+					end
+					if v3 < 5 begin
+						va += 1
+						checkCollision
+						if vd == 2 then va -= 1
+					end
+					i := enemies
+					i += v7 
+					save va - vb
+					
+				
+			end end
+			
+			v7 += 5
+		if v7 != 25 then again
+		
 		drawMap
 		drawEnemies
 		i := long audio-step
@@ -234,6 +286,43 @@
 	
 ;
 
+: checkCollision
+	#Check if tile is walkable
+	getTileID
+	i := access load v5 - v5
+	vd := 0
+	if ve <= v5 begin
+	
+	#Check if enemy is standing on tile
+		ve := 0
+		loop 
+			i := enemies
+			i += ve
+			load v5 - v6
+			
+			#va and vb SHOULD have the coordinates of the tile we're checking
+			if va == v5 then vd += 1
+			if vb == v6 then vd += 1
+			if vd != 2 then vd := 0
+			
+			if vd == 2 then ve := 20 # Get us out of the loop! There is an enemy here!
+			ve += 5
+		if ve != 25 then again
+		
+		#Check if player is standing on tile?
+		if vd != 2 begin
+			#i := playerPos
+			#load v8 - v9
+			if va == v8 then vd += 1
+			if vb == v9 then vd += 1
+			if vd != 2 then vd := 0
+		end
+		
+	else
+		vd := 2
+	end
+;
+
 
 ###  PLAYER STATS
 
@@ -253,10 +342,10 @@
 ### ENEMY STATS
 : enemies
 #X  Y  ID HP STRENGTH
- 12 66 5  10 7 # Reserved for the Wizard!
- 0  0  0  0  0
- 0  0  0  0  0 
- 0  0  0  0  0
+ 12 66 6  10 7 # Reserved for the Wizard!
+ 12 30 2  0  0
+ 4  6  3  0  0 
+ 5  3  1  0  0
  0  0  0  0  0
 
 : bestiary
@@ -284,43 +373,45 @@
 10 7
 
 : drawEnemies
-	v5 := 0
-	vc := DRAW_START_X  vd := DRAW_START_Y
-	i := playerPos
-	load va - vb
-	va -= 3
-	vb -= 3
-	loop 
-		loop
-			i := enemies
-			i += v5
-			load v4
-			if v0 == va begin if v1 == vb begin
-				v0 := 0
-				v1 := TILE_SIZE
+	#Erase/redraw tiles that enemies are standing on
+	#We might erase the above code and implement drawing enemies into this
+	v7 := 0
+	loop
+		i := enemies
+		i += v7
+		load v2
+		v0 -= v8 #v8 and v9 should still be holding the player position
+		v0 += 3 #Raises v0 above "negative" value
+		if v0 < 7 begin #If the enemy is within the field of view
+			v0 += v0 #2
+			v0 += v0 #4
+			v0 += v0 #8
+			v0 += DRAW_START_X #Offset
+			v1 -= v9
+			v1 += 3
+			if v1 < 7 begin
+				v1 += v1
+				v1 += v1
+				v1 += v1
+				v1 += DRAW_START_Y
+				load va - vb
+				drawTile #Erase tile
+				
+				#Now draw enemy
 				i := long enemiesSprites 
-				loop 
-					i += v1
-					v0 += 1
-				if v0 < v2 then again
+				v2 -= 1
+				v2 += v2 #Enemy ID * 2
+				v2 += v2 # * 4
+				v2 += v2 # * 8
+				v2 += v2 # * 16
+				i += v2
+				plane 1 sprite v0 v1 8
+				v2 := 8 i += v2
+				plane 2 sprite v0 v1 8
 				
-				#Draw enemy
-				plane 1 sprite va vb 8
-				v1 := 8 i += v2
-				plane 2 sprite va vb 8
-				
-			end end
-			v5 += 5
-		if v5 <= 20 then again
-		
-		va += 1 vc += 8
-		if vc > 50 begin
-			va -= 7
-			vc := DRAW_START_X
-			vb += 1
-			vd += 8
-		end
-	if vd < 56 then again 
+		end end
+		v7  += 5
+	if v7 != 25 then again
 ;
 
 ### DRAW MAP AND TILES
@@ -333,8 +424,8 @@
 	
 	v2 := 0
 	
-	loop if v1 < 56 begin
-		loop if v0 < 56 begin
+	loop if v1 != DRAW_END_Y begin
+		loop if v0 != DRAW_END_X begin
 			
 			if vb == v9 then v2 += 1 #These two ifs are a catch to make sure we don't draw on the same tile as a player
 			if va == v8 then v2 += 1 #We'll need to do something for enemies later
@@ -393,7 +484,7 @@
 	
 	vc := MAP_WIDTH
 	
-	loop if vd < vb begin
+	loop if vd != vb begin
 		i += vc
 		vd += 1
 		again 
