@@ -22,24 +22,24 @@
 	hires
 	
 	#Draw Frame 
-	i := frame-corner-nw
+	i := long frame-corner-nw
 	v0 := 0 v1 := 2
 	plane 1 sprite v0 v1 2
 	plane 2 sprite v0 v1 2
-	i := frame-corner-sw
+	i := long frame-corner-sw
 	v0 := 0 v1 := DRAW_END_Y
 	plane 1 sprite v0 v1 2
 	plane 2 sprite v0 v1 2
-	i := frame-corner-ne
+	i := long frame-corner-ne
 	v0 := DRAW_END_X v1 := 2
 	plane 1 sprite v0 v1 2
 	plane 2 sprite v0 v1 2
-	i := frame-corner-se
+	i := long frame-corner-se
 	v0 := DRAW_END_X v1 := DRAW_END_Y
 	plane 1 sprite v0 v1 2
 	plane 2 sprite v0 v1 2
 	
-	i := frame-h
+	i := long frame-h
 	v0 := DRAW_START_X
 	v1 := 1
 	loop
@@ -52,7 +52,7 @@
 		end
 	if v1 < 64 then again
 	
-	i := frame-v
+	i := long frame-v
 	v0 := 1
 	v1 := DRAW_START_Y
 	loop
@@ -66,7 +66,7 @@
 	if v0 < 64 then again
 	
 	#Draw Player sprite in center of the screen
-	i := playerSprite
+	i := long playerSprite
 	plane 1
 	v0 := DRAW_CENTER_X 
 	v1 := DRAW_CENTER_Y
@@ -126,8 +126,14 @@
 	getTileID
 	i := access load v0
 	if ve <= v0 begin
+		
 		drawMap
-		v8 := v3 v9 := v4
+		i := playerPos
+		save v3 - v4
+		drawEnemies
+		
+		i := playerPos
+		load v8 - v9
 		va := v8 vb := v9
 		getTileID
 		if ve == 5 begin #Entering Dungeon
@@ -162,7 +168,8 @@
 		i := playerPos
 		save v8 - v9
 		drawMap
-		i := audio-step
+		drawEnemies
+		i := long audio-step
 		v2 := 3
 		v1 := 34 pitch := v1
 		audio buzzer := v2
@@ -179,7 +186,7 @@
 			v1 := 50
 			if v9 == 33 begin
 				#Got the sword!
-				i := swordSprite
+				i := long swordSprite
 				v0 := 66
 				plane 1 sprite v0 v1 10
 				v2 := 10 i += v2
@@ -187,7 +194,7 @@
 			end
 			if v9 == 46 begin
 				#Got the armor!
-				i := armourSprite
+				i := long armourSprite
 				v0 := 75
 				plane 1 sprite v0 v1 8
 				v2 := 8 i += v2
@@ -195,7 +202,7 @@
 			end
 			if v9 > 58 begin
 				#Got the key from killing the wizard!
-				i := keySprite
+				i := long keySprite
 				v0 := 84
 				plane 1 sprite v0 v1 9
 				v2 := 9 i += v2
@@ -207,7 +214,7 @@
 			end
 			
 			#Play victory jingle!
-			i := audio-note
+			i := long audio-note
 			v1 := 96 v2 := 12
 			pitch := v1
 			audio buzzer := v2
@@ -221,12 +228,7 @@
 			pitch := v1
 			audio buzzer := v2
 		end
-		
-		
 	end
-	
-	
-	
 	v3 := v8 v4 := v9
 	V7 := 1
 	
@@ -251,7 +253,7 @@
 ### ENEMY STATS
 : enemies
 #X  Y  ID HP STRENGTH
- 12 66 6  10 7 # Reserved for the Wizard!
+ 12 66 5  10 7 # Reserved for the Wizard!
  0  0  0  0  0
  0  0  0  0  0 
  0  0  0  0  0
@@ -281,6 +283,45 @@
 #6 = Wizard
 10 7
 
+: drawEnemies
+	v5 := 0
+	vc := DRAW_START_X  vd := DRAW_START_Y
+	i := playerPos
+	load va - vb
+	va -= 3
+	vb -= 3
+	loop 
+		loop
+			i := enemies
+			i += v5
+			load v4
+			if v0 == va begin if v1 == vb begin
+				v0 := 0
+				v1 := TILE_SIZE
+				i := long enemiesSprites 
+				loop 
+					i += v1
+					v0 += 1
+				if v0 < v2 then again
+				
+				#Draw enemy
+				plane 1 sprite va vb 8
+				v1 := 8 i += v2
+				plane 2 sprite va vb 8
+				
+			end end
+			v5 += 5
+		if v5 <= 20 then again
+		
+		va += 1 vc += 8
+		if vc > 50 begin
+			va -= 7
+			vc := DRAW_START_X
+			vb += 1
+			vd += 8
+		end
+	if vd < 56 then again 
+;
 
 ### DRAW MAP AND TILES
 
@@ -317,7 +358,7 @@
 : drawTile
 	#v0 =screen X, v1 = screen Y, va = X, vb = Y, vc = 25 (Width of the map), vd
 	getTileID
-	i := tileset
+	i := long tileset
 	vc := TILE_SIZE
 	vd := 0
 	loop if vd < ve begin
@@ -331,14 +372,27 @@
 	plane 2 sprite v0 v1 8 
 ;
 
-
-	
 	
 : getTileID
 # Gets the ID of a tile on the map, determined by va (X) and vb (Y), and then loads it to ve.
-  i := map
+  
+	
+	if vb > 58 begin
+		i := map-castle
+		vd := 59
+	else if vb > 40 begin
+		i := map-cave
+		vd := 41
+	else if vb > 18 begin
+		i := map-temple
+		vd := 19
+	else
+		i := map-world
+		vd := 0
+	end end end
+	
 	vc := MAP_WIDTH
-	vd := 0
+	
 	loop if vd < vb begin
 		i += vc
 		vd += 1
@@ -348,7 +402,9 @@
 	load ve - ve
 ;
 
-: map
+### WORLD MAP
+
+: map-world
 #      |                                                          |
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 31 31 31 31 31 31 31 31 31
 13 13 13 13 13 13 13 13 13 13 19 20 21 22 23 13 31 31 31 31 31 31 31 31 31
@@ -372,7 +428,7 @@
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 #------|----------------------------------------------------------|------- 18
-# TEMPLE
+: map-temple
 13 13 13 13 13 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32 13 13 13 13 13 
 13 13 13 13 13 32 32 32 32 32 0  0  0  0  0  32 32 32 32 32 13 13 13 13 13
 13 13 13 13 13 32 32 32 0  0  0  12 0  12 0  0  0  32 32 32 13 13 13 13 13
@@ -397,7 +453,7 @@
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 #------|----------------------------------------------------------|------- 40
-# CAVE
+: map-cave
 13 13 13 13 29 29 13 13 29 29 29 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 1  1  13 13 1  1  1  13 13 13 13 29 29 29 29 29 29 13 13 13 13
 13 13 13 29 1  1  13 29 1  13 1  13 13 13 13 1  1  1  1  1  1  29 13 13 13
@@ -418,7 +474,7 @@
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
 #------|----------------------------------------------------------|------- 58
-# CASTLE DAIOUIKA
+: map-castle
 13 13 13 13 13 13 13 13 13 13 13 13 33 13 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 13 13 13 13 13 13 13 33 8  33 13 13 13 13 13 13 13 13 13 13 13
 13 13 13 13 13 13 13 13 13 13 33 0  4  0  33 13 13 13 13 13 13 13 13 13 13
@@ -643,9 +699,6 @@
 
 : frame-v
 0x80
-
-
-### AUDIO
 
 : audio-step
 3 5 32 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
