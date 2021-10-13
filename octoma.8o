@@ -16,6 +16,41 @@
 :calc TILE_HALF { TILE_SIZE / 2 }
 :const MAP_WIDTH 24
 
+: font
+	0x40 0xA0 0xE0 0xA0 0xA0  0x80 0x80 0xC0 0xA0 0xC0  0x60 0x80 0x80 0x80 0x60  0xC0 0xA0 0xA0 0xA0 0xC0 # A B C D
+	0xE0 0x80 0xE0 0x80 0xE0  0x60 0x40 0xE0 0x40 0x40  0xE0 0x80 0x80 0xA0 0xE0  0x80 0x80 0xC0 0xA0 0xA0 # E F G H
+	0x40 0x00 0x40 0x40 0x40  0xE0 0x40 0x40 0x40 0xC0  0xA0 0xA0 0xC0 0xA0 0xA0  0x80 0x80 0x80 0x80 0xE0 # I J K L
+	0x00 0x00 0xC0 0xA0 0xA0  0x00 0xE0 0xa0 0xE0 0x00  0xC0 0xA0 0xC0 0x80 0x80  0xE0 0xA0 0xA0 0xC0 0x20 # N O P Q
+	0x00 0x00 0xC0 0x80 0x80  0xC0 0x80 0xC0 0x40 0xC0  0xE0 0x40 0x40 0x40 0x40  0x00 0x00 0xA0 0xA0 0xE0 # R S T U
+	0xA0 0xA0 0xA0 0xA0 0x40  0x00 0xA0 0x40 0xA0 0x00  0xA0 0xA0 0x40 0x40 0x40  0xE0 0x20 0x40 0x80 0xE0 # V X Y Z
+	0x40 0x40 0x40 0x00 0x40  0x00 0x00 0x00 0x00 0x40  0xC0 0x20 0x60 0x00 0x40  0x40 0xC0 0x40 0x40 0xE0 # ! . ? 1
+	0xC0 0x20 0x60 0x80 0xE0  0xC0 0x20 0xC0 0x20 0xC0  0x20 0xA0 0xE0 0x20 0x20  0xE0 0x80 0xC0 0x20 0xC0 # 2 3 4 5
+	0x60 0x80 0xE0 0xA0 0xE0  0xE0 0x20 0x40 0xE0 0x40  0xE0 0xA0 0x40 0xA0 0xE0  0xE0 0xA0 0xE0 0x20 0x20 # 6 7 8 9
+	0xE0 0xA0 0xA0 0xA0 0xE0  0x00 0x40 0x00 0x40 0x00  0x40 0x80 0x80 0x80 0x40  0x40 0x20 0x20 0x20 0x40 # 0 : ( )
+	
+# M and W are near-illegeble when they're only 3 pixels wide, so I'm seperating them from the rest of the font.
+: fontMW 
+	0xF0 0xA8 0xA8 0xA8 0xA8  0x88 0xA8 0xA8 0xA8 0x50 
+	
+:stringmode text "ABCDEFGHIJKLNOPQRSTUVXYZ!.?1234567890:()" {
+	:calc addr { font + VALUE * 5 }
+	i := addr
+	sprite v0 v1 5
+	v0 += 4
+}
+:stringmode text "MW" {
+	:calc addr { fontMW + VALUE * 5 }
+	i := addr
+	sprite v0 v1 5
+	v0 += 6
+}
+:stringmode text " " { v0 += 3 }
+:stringmode text "/" { v1 += 7 v0 := v2 }
+
+:const maxEnemies 8
+:calc enemyControlLimit { maxEnemies * 5 }
+:calc enemySpawnLimit { maxEnemies * 3 }
+
 : main
 	hires
 	
@@ -63,6 +98,19 @@
 		end
 	if v0 < 64 then again
 	
+	#UI TEXT (Placeholder)
+	v0 := DRAW_END_X v0 += 6 v2 := v0
+	v1 := 1
+	plane 1
+	text "HP: 0640/" 
+	plane 2
+	text "MP: 420 BLAZE IT/" 
+	text "EXP: TOO COOL/"
+	plane 1
+	v1 -= 7
+	text "EXP: TOO COOL/"
+	text "LV: GOOD ENOUGH"
+	
 	#Draw Player sprite in center of the screen
 	i := long playerSprite
 	plane 1
@@ -73,6 +121,14 @@
 	i += v2
 	plane 2
 	sprite v0 v1 8
+	
+	#Set up enemies
+	v7 := 0
+	v6 := 0
+	loop while v7 != enemySpawnLimit
+		i := long enemy-spawn-overworld
+		spawnEnemy
+	again
 	
 	i := playerPos
 	load v8 - v9
@@ -143,20 +199,40 @@
 		va := v8 vb := v9
 		getTileID
 		if ve == 5 begin #Entering Dungeon
+			v7 := 0
+			v6 := 0
 			if v9 == 3 begin #Entering Daiouika Castle
 				v8 := 12
 				v9 := 81
+				loop while v7 != enemySpawnLimit
+					i := long enemy-spawn-castle
+					spawnEnemy
+				again
 			end 
 			if v9 == 5 begin #Entering the Lost Caves
 				v8 := 12
 				v9 := 55
+				loop while v7 != enemySpawnLimit
+					i := long enemy-spawn-cave
+					spawnEnemy
+				again
 			end 
 			if v9 == 13 begin #Entering Temple 8
 				v8 := 12
 				v9 := 25
+				loop while v7 != enemySpawnLimit
+					i := long enemy-spawn-temple
+					spawnEnemy
+				again
 			end 
 		end 
 		if ve == 6 begin #Exiting Dungeon
+			v7 := 0
+			v6 := 0
+			loop while v7 != enemySpawnLimit
+				i := long enemy-spawn-overworld
+				spawnEnemy
+			again
 			if v9 == 81 begin #Daiouika Castle
 				v8 := 12
 				v9 := 4
@@ -171,6 +247,7 @@
 			end 
 		end
 	
+	
 		i := playerPos
 		save v8 - v9
 		
@@ -184,43 +261,43 @@
 			i := enemies
 			i += v7
 			load va - vc
-			load v3 - v4
-			v4 -= v9
-			v4 += 5
-			if v4 < 10 begin
-				v3 -= v8
-				v3 += 5
-				if v3 < 10 begin			
+			if vc != 0 begin
+				load v3 - v4
+				v4 -= v9
+				v4 += 5
+				if v4 < 10 begin
+					v3 -= v8
+					v3 += 5
+					if v3 < 10 begin			
+
+						if v4 > 6 begin
+							vb -= 1
+							checkCollision
+							if vd == 2 then vb += 1
+						end
+						if v4 < 4 begin
+							vb += 1
+							checkCollision
+							if vd == 2 then vb -= 1
+						end
+						if v3 > 6 begin
+							va -= 1
+							checkCollision
+							if vd == 2 then va += 1
+						end
+						if v3 < 4 begin
+							va += 1
+							checkCollision
+							if vd == 2 then va -= 1
+						end
+						i := enemies
+						i += v7 
+						save va - vb
 					
-					if v4 > 6 begin
-						vb -= 1
-						checkCollision
-						if vd == 2 then vb += 1
-					end
-					if v4 < 4 begin
-						vb += 1
-						checkCollision
-						if vd == 2 then vb -= 1
-					end
-					if v3 > 6 begin
-						va -= 1
-						checkCollision
-						if vd == 2 then va += 1
-					end
-					if v3 < 4 begin
-						va += 1
-						checkCollision
-						if vd == 2 then va -= 1
-					end
-					i := enemies
-					i += v7 
-					save va - vb
-					
-				
-			end end
+			end end end
 			
 			v7 += 5
-		if v7 != 25 then again
+		if v7 != enemyControlLimit then again
 		
 		drawMap
 		drawEnemies
@@ -289,6 +366,25 @@
 	
 ;
 
+: spawnEnemy
+	#Assumes that i is already set to the list of enemies to spawn, otherwise we're gonna have a problem.
+	#Load
+	i += v7
+	load v2 # X, Y, and ID
+	
+	i := bestiary
+	i += v2 i += v2
+	load v3 - v4 #Attack and health
+	
+	i := enemies
+	i += v6
+	save v4
+	
+	#  Next spawn, or trigger exit loop
+	v7 += 3
+	v6 += 5
+;
+
 : getTileID
 # Gets the ID of a tile on the map, determined by va (X) and vb (Y), and then loads it to ve.
 	
@@ -339,9 +435,9 @@
 			if vb == v6 then vd += 1
 			if vd != 2 then vd := 0
 			
-			if vd == 2 then ve := 20 # Get us out of the loop! There is an enemy here!
+			if vd == 2 begin ve := enemyControlLimit ve -= 5 end # Get us out of the loop! There is an enemy here!
 			ve += 5
-		if ve != 25 then again
+		if ve != enemyControlLimit then again
 		
 		#Check if player is standing on tile?
 		#if vd != 2 begin
@@ -376,11 +472,14 @@
 ### ENEMY STATS
 : enemies
 #X  Y  ID HP STRENGTH
- 12 66 6  10 7 # Reserved for the Wizard!
- 12 30 2  0  0
- 4  6  3  0  0 
- 5  3  1  0  0
- 0  0  0  0  0
+ 0  0  0  0  0 # 0  / 1
+ 0  0  0  0  0 # 5  / 2
+ 0  0  0  0  0 # 10 / 3
+ 0  0  0  0  0 # 15 / 4
+ 0  0  0  0  0 # 20 / 5
+ 0  0  0  0  0 # 25 / 6
+ 0  0  0  0  0 # 30 / 7
+ 0  0  0  0  0 # 35 / 8
 
 : bestiary
 #Example Entry: 3 HP, 5 Strength
@@ -404,7 +503,7 @@
 5 6
 
 #6 = Wizard
-10 7
+10 17
 
 : drawEnemies
 	#Erase/redraw tiles that enemies are standing on
@@ -445,7 +544,7 @@
 				
 		end end
 		v7  += 5
-	if v7 != 25 then again
+	if v7 != enemyControlLimit then again
 ;
 
 
@@ -600,6 +699,57 @@
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 
 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 
+
+#I wanted to do random spawns, but this is much easier.
+#QUICK ID REFRECE:
+#1 = Shrimp
+#2 = Lobster
+#3 = Waterbear
+#4 = Skull
+#5 = Squid
+#6 = Wizard
+: enemy-spawn-overworld
+#X  Y  ID
+ 6  10  1 #1
+ 7  14 1 #2
+ 15 14 1 #3
+ 20 7  2 #4
+ 11 7  2 #5
+ 0  0  0 #6
+ 0  0  0 #7
+ 0  0  0 #8
+: enemy-spawn-cave
+#X  Y  ID
+ 0  0  0 #1
+ 0  0  0 #2
+ 0  0  0 #3
+ 0  0  0 #4
+ 0  0  0 #5
+ 0  0  0 #6
+ 0  0  0 #7
+ 0  0  0 #8
+: enemy-spawn-temple
+#X  Y  ID
+ 0  0  0 #1
+ 0  0  0 #2
+ 0  0  0 #3
+ 0  0  0 #4
+ 0  0  0 #5
+ 0  0  0 #6
+ 0  0  0 #7
+ 0  0  0 #8
+: enemy-spawn-castle
+#X  Y  ID
+ 12 66 6 #1
+ 0  0  0 #2
+ 0  0  0 #3
+ 0  0  0 #4
+ 0  0  0 #5
+ 0  0  0 #6
+ 0  0  0 #7
+ 0  0  0 #8
+
+
 
 
 ### SPRITES
