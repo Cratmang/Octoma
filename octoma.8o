@@ -176,13 +176,188 @@
 			vd := 3
 		end
 		
-		#Delay to prevent the player from just ZOOMING across the map
-		# Copied from the default Octo example project. I only barely understand how it works.
+		
     if v7 != 0 begin
+			#Input recieved. Now to see if it's a valid move...
+			va := v3 vb := v4 vc := 0
+			checkCollision
+			if vd != 2 begin
+
+				i := playerPos
+				load v8 - v9
+				drawMap
+				drawEnemies
+				v8 := v3 v9 := v4
+				va := v8 vb := v9
+				getTileID
+				if ve == 5 begin #Entering Dungeon
+					v7 := 0
+					v6 := 0
+					if v9 == 3 begin #Entering Daiouika Castle
+						v8 := 12
+						v9 := 81
+						loop while v7 != enemySpawnLimit
+							i := long enemy-spawn-castle
+							spawnEnemy
+						again
+					end 
+					if v9 == 5 begin #Entering the Lost Caves
+						v8 := 12
+						v9 := 55
+						loop while v7 != enemySpawnLimit
+							i := long enemy-spawn-cave
+							spawnEnemy
+						again
+					end 
+					if v9 == 13 begin #Entering Temple 8
+						v8 := 12
+						v9 := 25
+						loop while v7 != enemySpawnLimit
+							i := long enemy-spawn-temple
+							spawnEnemy
+						again
+					end 
+				end 
+				if ve == 6 begin #Exiting Dungeon
+					v7 := 0
+					v6 := 0
+					loop while v7 != enemySpawnLimit
+						i := long enemy-spawn-overworld
+						spawnEnemy
+					again
+					if v9 == 81 begin #Daiouika Castle
+						v8 := 12
+						v9 := 4
+					end 
+					if v9 == 55 begin #Lost Caves
+						v8 := 19
+						v9 := 5
+					end 
+					if v9 == 25 begin #Temple 8
+						v8 := 11
+						v9 := 13
+					end 
+				end
+
+
+				i := playerPos
+				save v8 - v9
+
+				#Enemy movement
+				# Loop through each enemy
+				#  Check where the player is
+				#  Move toward the player
+				#    Movement needs to account for walls
+				v7 := 0
+				loop
+					i := enemies
+					i += v7
+					load va - vc
+					if vc != 0 begin
+						load v3 - v4
+						v4 -= v9
+						v4 += 5
+						if v4 < 10 begin
+							v3 -= v8
+							v3 += 5
+							if v3 < 10 begin			
+
+								if v4 > 5 begin
+									vb -= 1
+									checkCollision
+									if vd == 2 then vb += 1
+								end
+								if v4 < 5 begin
+									vb += 1
+									checkCollision
+									if vd == 2 then vb -= 1
+								end
+								if v3 > 5 begin
+									va -= 1
+									checkCollision
+									if vd == 2 then va += 1
+								end
+								if v3 < 5 begin
+									va += 1
+									checkCollision
+									if vd == 2 then va -= 1
+								end
+								i := enemies
+								i += v7 
+								save va - vb
+
+					end end end
+
+					v7 += 5
+				if v7 != enemyControlLimit then again
+
+				drawMap
+				drawEnemies
+				i := long audio-step
+				v2 := 3
+				v1 := 34 pitch := v1
+				audio buzzer := v2
+
+				va := v8 vb := v9
+				getTileID
+				if ve == 9 begin # We found treasure!
+
+					# Convert chest into opened chest.
+					ve := 10
+					save ve - ve
+
+					# Get loot dropped
+					v1 := 50
+					if v9 == 33 begin
+						#Got the sword!
+						i := long swordSprite
+						v0 := 66
+						plane 1 sprite v0 v1 10
+						v2 := 10 i += v2
+						plane 2 sprite v0 v1 10
+					end
+					if v9 == 46 begin
+						#Got the armor!
+						i := long armourSprite
+						v0 := 75
+						plane 1 sprite v0 v1 8
+						v2 := 8 i += v2
+						plane 2 sprite v0 v1 8
+					end
+					if v9 > 58 begin
+						#Got the key from killing the wizard!
+						i := long keySprite
+						v0 := 84
+						plane 1 sprite v0 v1 9
+						v2 := 9 i += v2
+						plane 2 sprite v0 v1 9
+						i := access
+						load v0
+						v0 += 1
+						save v0
+					end
+
+					#Play victory jingle!
+					i := long audio-note
+					v1 := 96 v2 := 12
+					pitch := v1
+					audio buzzer := v2
+					vf := 7
+					delay := vf
+					loop
+						vf := delay
+						if vf != 0 then
+					again
+					v1 := 120
+					pitch := v1
+					audio buzzer := v2
+				end
+			end
+			v3 := v8 v4 := v9
+			V7 := 1
 			
-			#Note - Maybe just put moveP in here, since it's not called anywhere else in the program.
-			moveP
-			
+			#Delay to prevent the player from just ZOOMING across the map
+			# Copied from the default Octo example project. I only barely understand how it works.
 			vf := 7
 			delay := vf
 			loop
@@ -193,189 +368,6 @@
 		end
 		
 	again
-	
-	
-	
-: moveP
-	
-	va := v3 vb := v4 vc := 0
-	checkCollision
-	if vd != 2 begin
-		
-		i := playerPos
-		load v8 - v9
-		drawMap
-		drawEnemies
-		v8 := v3 v9 := v4
-		va := v8 vb := v9
-		getTileID
-		if ve == 5 begin #Entering Dungeon
-			v7 := 0
-			v6 := 0
-			if v9 == 3 begin #Entering Daiouika Castle
-				v8 := 12
-				v9 := 81
-				loop while v7 != enemySpawnLimit
-					i := long enemy-spawn-castle
-					spawnEnemy
-				again
-			end 
-			if v9 == 5 begin #Entering the Lost Caves
-				v8 := 12
-				v9 := 55
-				loop while v7 != enemySpawnLimit
-					i := long enemy-spawn-cave
-					spawnEnemy
-				again
-			end 
-			if v9 == 13 begin #Entering Temple 8
-				v8 := 12
-				v9 := 25
-				loop while v7 != enemySpawnLimit
-					i := long enemy-spawn-temple
-					spawnEnemy
-				again
-			end 
-		end 
-		if ve == 6 begin #Exiting Dungeon
-			v7 := 0
-			v6 := 0
-			loop while v7 != enemySpawnLimit
-				i := long enemy-spawn-overworld
-				spawnEnemy
-			again
-			if v9 == 81 begin #Daiouika Castle
-				v8 := 12
-				v9 := 4
-			end 
-			if v9 == 55 begin #Lost Caves
-				v8 := 19
-				v9 := 5
-			end 
-			if v9 == 25 begin #Temple 8
-				v8 := 11
-				v9 := 13
-			end 
-		end
-	
-	
-		i := playerPos
-		save v8 - v9
-		
-		#Enemy movement
-		# Loop through each enemy
-		#  Check where the player is
-		#  Move toward the player
-		#    Movement needs to account for walls
-		v7 := 0
-		loop
-			i := enemies
-			i += v7
-			load va - vc
-			if vc != 0 begin
-				load v3 - v4
-				v4 -= v9
-				v4 += 5
-				if v4 < 10 begin
-					v3 -= v8
-					v3 += 5
-					if v3 < 10 begin			
-
-						if v4 > 5 begin
-							vb -= 1
-							checkCollision
-							if vd == 2 then vb += 1
-						end
-						if v4 < 5 begin
-							vb += 1
-							checkCollision
-							if vd == 2 then vb -= 1
-						end
-						if v3 > 5 begin
-							va -= 1
-							checkCollision
-							if vd == 2 then va += 1
-						end
-						if v3 < 5 begin
-							va += 1
-							checkCollision
-							if vd == 2 then va -= 1
-						end
-						i := enemies
-						i += v7 
-						save va - vb
-					
-			end end end
-			
-			v7 += 5
-		if v7 != enemyControlLimit then again
-		
-		drawMap
-		drawEnemies
-		i := long audio-step
-		v2 := 3
-		v1 := 34 pitch := v1
-		audio buzzer := v2
-		
-		va := v8 vb := v9
-		getTileID
-		if ve == 9 begin # We found treasure!
-			
-			# Convert chest into opened chest.
-			ve := 10
-			save ve - ve
-			
-			# Get loot dropped
-			v1 := 50
-			if v9 == 33 begin
-				#Got the sword!
-				i := long swordSprite
-				v0 := 66
-				plane 1 sprite v0 v1 10
-				v2 := 10 i += v2
-				plane 2 sprite v0 v1 10
-			end
-			if v9 == 46 begin
-				#Got the armor!
-				i := long armourSprite
-				v0 := 75
-				plane 1 sprite v0 v1 8
-				v2 := 8 i += v2
-				plane 2 sprite v0 v1 8
-			end
-			if v9 > 58 begin
-				#Got the key from killing the wizard!
-				i := long keySprite
-				v0 := 84
-				plane 1 sprite v0 v1 9
-				v2 := 9 i += v2
-				plane 2 sprite v0 v1 9
-				i := access
-				load v0
-				v0 += 1
-				save v0
-			end
-			
-			#Play victory jingle!
-			i := long audio-note
-			v1 := 96 v2 := 12
-			pitch := v1
-			audio buzzer := v2
-			vf := 7
-			delay := vf
-			loop
-				vf := delay
-				if vf != 0 then
-			again
-			v1 := 120
-			pitch := v1
-			audio buzzer := v2
-		end
-	end
-	v3 := v8 v4 := v9
-	V7 := 1
-	
-;
 
 : spawnEnemy
 	#Assumes that i is already set to the list of enemies to spawn, otherwise we're gonna have a problem.
@@ -797,8 +789,8 @@
 0x00 0x00 0x18 0x3C 0x3C 0x3C 0x3C 0x00
 
 #7 = Seaweed
-0xA4 0xEA 0x54 0x56 0x6B 0xF5 0x95 0x22
-0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+0xAA 0xBE 0xCD 0x7E 0xED 0xEF 0x77 0xEE
+0x00 0x24 0x48 0x48 0x44 0x22 0x22 0x44
 
 #8 = Princess's space
 0x00 0x22 0x71 0x5A 0xB1 0x84 0x20 0x6E 
@@ -849,8 +841,8 @@
 0x00 0x07 0x1F 0x7F 0xFF 0xFF 0xFF 0xFE
 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
 
-0xEF 0xE3 0xEC 0xEF 0xEC 0xE3 0xEF 0x00
-0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+0xC7 0xD3 0xCC 0xCF 0xCC 0xC3 0xC7 0x00
+0x00 0x10 0x10 0x10 0x10 0x10 0x10 0x00
 
 0x00 0xE0 0x78 0x7E 0xFF 0xFF 0xFF 0x7F
 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
@@ -858,17 +850,17 @@
 0x00 0x00 0x00 0x00 0x00 0x80 0xC0 0xE0
 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
 
-0x07 0x0F 0x0F 0x1F 0x1F 0x00 0xFF 0x00
-0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+0x00 0x0F 0x0F 0x00 0x1F 0x00 0x00 0x00
+0x00 0x00 0x00 0x00 0x00 0x00 0xFF 0x00
 
-0xFE 0xFE 0xFE 0xFE 0xFE 0x00 0xFF 0x00
-0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+0x00 0xFE 0xFE 0x00 0xFF 0x00 0x00 0x00
+0x00 0x00 0x00 0x00 0x00 0x00 0xFF 0x00
 
-0x7F 0x7F 0x7F 0x7F 0x7F 0x00 0xFF 0x00
-0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+0x00 0x7F 0x7F 0x00 0xFF 0x00 0x00 0x00
+0x00 0x00 0x00 0x00 0x00 0x00 0xFF 0x00
 
-0xE0 0xF0 0xF0 0xF8 0xF8 0x00 0xFF 0x00
-0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+0x00 0xF0 0xF0 0x00 0xF8 0x00 0x00 0x00
+0x00 0x00 0x00 0x00 0x00 0x00 0xFF 0x00
 
 #28 = Cliff North Edge
 0x00 0x00 0x00 0x00 0x00 0x00 0xCE 0xB3
