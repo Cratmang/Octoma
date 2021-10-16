@@ -5,7 +5,7 @@
 #
 #######
 
-# It is EXTREMELY recommded that you play the game on LUDICROUS SPEED, otherwise the game will be far too slow.
+# It is HIGHLY recommded that you play the game on LUDICROUS SPEED, otherwise the game will be far too slow.
 #  (500-1000 cycles/frame might work, but may also trigger epilepsy)
 
 # DEFAULT COLOURS (CGA 1):
@@ -150,98 +150,160 @@
 	v3 := v8 v4 := v9
 	
 	#v7 will check to see if the player has made an input.
-	v7 := 0
+	v7 := 0 
+	ve := 0
 	
+	#Game start!
 	loop
 		
-		v0 := OCTO_KEY_W if v0 key begin
-			v4 -= 1
-			v7 := 1
+		
+		#Basic attack
+		v0 := OCTO_KEY_1 if v0 key begin
+			ve := 1
+			plane 1
+			v0 := DRAW_END_X
+			v0 += 5
+			v1 := 32
+			text "DIRECTION?/(S) TO CANCEL"
 		end
-		v0 := OCTO_KEY_A if v0 key begin
-			v3 -= 1
-			v7 := 1
-		end
-		v0 := OCTO_KEY_X if v0 key begin
-			v4 += 1
-			v7 := 1
-		end
-		v0 := OCTO_KEY_D if v0 key begin
-			v3 += 1
-			v7 := 1
-		end
-		v0 := OCTO_KEY_S if v0 key begin
-			#No movement, Doesn't work yet - The collision check conflicts with the player position
-			v7 := 1
-			vd := 3
-		end
+		
+		loop
+			#Movement/Choosing Direction
+			v0 := OCTO_KEY_W if v0 key begin
+				v4 -= 1
+				v7 := 1
+				if ve == 1 then ve := 2
+			end
+			v0 := OCTO_KEY_A if v0 key begin
+				v3 -= 1
+				v7 := 1
+				if ve == 1 then ve := 2
+			end
+			v0 := OCTO_KEY_X if v0 key begin
+				v4 += 1
+				v7 := 1
+				if ve == 1 then ve := 2
+			end
+			v0 := OCTO_KEY_D if v0 key begin
+				v3 += 1
+				v7 := 1
+				if ve == 1 then ve := 2
+			end
+			v0 := OCTO_KEY_S if v0 key begin
+				#No movement
+				if ve != 1 then v7 := 1
+			end
+			
+			if ve == 1 begin
+				v0 := OCTO_KEY_Q if v0 key begin
+					ve := 2
+				end
+			end
+			
+			if ve == 2 begin
+					v0 := DRAW_END_X
+					v0 += 5
+					v1 := 32
+					text "DIRECTION?/(S) TO CANCEL"
+					ve := 0
+					V7 := 2
+			end
+		if ve != 0 then again
 		
 		
     if v7 != 0 begin
 			#Input recieved. Now to see if it's a valid move...
 			va := v3 vb := v4 vc := 0
-			checkCollision
+			# Check collision for movement
+			if v7 == 1 then checkCollision
+			#If attacking, check if any enemies are on the square we attacked.
+			if v7 == 2 begin
+				vd := 0
+				
+				
+			end
+			
 			if vd != 2 begin
 
 				i := playerPos
 				load v8 - v9
 				drawMap
 				drawEnemies
-				v8 := v3 v9 := v4
-				va := v8 vb := v9
-				getTileID
-				if ve == 5 begin #Entering Dungeon
-					v7 := 0
-					v6 := 0
-					if v9 == 3 begin #Entering Daiouika Castle
-						v8 := 12
-						v9 := 81
+				va := v3 vb := v4
+				
+				#Moving
+				v7 == 1 begin 
+					v8 := v3 v9 := v4
+					
+					#Moving between areas, and spawning enemies
+					getTileID
+					if ve == 5 begin #Entering Dungeon
+						v7 := 0
+						v6 := 0
+						if v9 == 3 begin #Entering Daiouika Castle
+							v8 := 12
+							v9 := 81
+							loop while v7 != enemySpawnLimit
+								i := long enemy-spawn-castle
+								spawnEnemy
+							again
+						end 
+						if v9 == 5 begin #Entering the Lost Caves
+							v8 := 12
+							v9 := 55
+							loop while v7 != enemySpawnLimit
+								i := long enemy-spawn-cave
+								spawnEnemy
+							again
+						end 
+						if v9 == 13 begin #Entering Temple 8
+							v8 := 12
+							v9 := 25
+							loop while v7 != enemySpawnLimit
+								i := long enemy-spawn-temple
+								spawnEnemy
+							again
+						end 
+					end 
+					if ve == 6 begin #Exiting Dungeon
+						v7 := 0
+						v6 := 0
 						loop while v7 != enemySpawnLimit
-							i := long enemy-spawn-castle
+							i := long enemy-spawn-overworld
 							spawnEnemy
 						again
-					end 
-					if v9 == 5 begin #Entering the Lost Caves
-						v8 := 12
-						v9 := 55
-						loop while v7 != enemySpawnLimit
-							i := long enemy-spawn-cave
-							spawnEnemy
-						again
-					end 
-					if v9 == 13 begin #Entering Temple 8
-						v8 := 12
-						v9 := 25
-						loop while v7 != enemySpawnLimit
-							i := long enemy-spawn-temple
-							spawnEnemy
-						again
-					end 
-				end 
-				if ve == 6 begin #Exiting Dungeon
-					v7 := 0
-					v6 := 0
-					loop while v7 != enemySpawnLimit
-						i := long enemy-spawn-overworld
-						spawnEnemy
-					again
-					if v9 == 81 begin #Daiouika Castle
-						v8 := 12
-						v9 := 4
-					end 
-					if v9 == 55 begin #Lost Caves
-						v8 := 19
-						v9 := 5
-					end 
-					if v9 == 25 begin #Temple 8
-						v8 := 11
-						v9 := 13
-					end 
+						if v9 == 81 begin #Daiouika Castle
+							v8 := 12
+							v9 := 4
+						end 
+						if v9 == 55 begin #Lost Caves
+							v8 := 19
+							v9 := 5
+						end 
+						if v9 == 25 begin #Temple 8
+							v8 := 11
+							v9 := 13
+						end 
+					end
+
+					i := playerPos
+					save v8 - v9
+					if v7 := 0
 				end
-
-
-				i := playerPos
-				save v8 - v9
+				
+				#Basic Attack
+				if v7 == 2 begin
+					i := enemies
+					
+					#if the enemy y = vb begin if enemy x = va
+					# vc := attack strength (based on level(?) whether or not we have the sacred sword)
+					# enemy hp -= vc
+					# if enemy hp > 200 (Sub for less than 0)
+					#  then enemy is dead
+					#  if enemy id = 6 (THE WIZARD!)
+					#   the tile turns into a chest that contains a key
+					
+				end 
 
 				#Enemy movement
 				# Loop through each enemy
@@ -358,13 +420,14 @@
 			
 			#Delay to prevent the player from just ZOOMING across the map
 			# Copied from the default Octo example project. I only barely understand how it works.
-			vf := 7
+			vf := 14
 			delay := vf
 			loop
 				vf := delay
 				if vf != 0 then
 			again
 			v7 := 0
+			ve := 0
 		end
 		
 	again
@@ -448,7 +511,13 @@
 			load v8 - v9
 			if va == v8 then vd += 1
 			if vb == v9 then vd += 1
-			if vd != 2 then vd := 0
+			if vd != 2 begin vd := 0
+			#The player is here! Attack!
+			# Get enemy strength
+			# if player has the sacred armor then reduce attack strength
+			# reduce player health by attack strength
+			# play hurt sound
+			
 		end end
 		
 	else
