@@ -163,8 +163,11 @@
 			plane 1
 			v0 := DRAW_END_X
 			v0 += 5
-			v1 := 32
-			text "DIRECTION?/(S) TO CANCEL"
+			v1 := 30
+			text "DIRECTION?/"
+			v0 := DRAW_END_X
+			v0 += 5
+			text "(S) TO CANCEL"
 		end
 		
 		loop
@@ -203,8 +206,11 @@
 			if ve == 2 begin
 					v0 := DRAW_END_X
 					v0 += 5
-					v1 := 32
-					text "DIRECTION?/(S) TO CANCEL"
+					v1 := 30
+					text "DIRECTION?/"
+					v0 := DRAW_END_X
+					v0 += 5
+					text "(S) TO CANCEL"
 					ve := 0
 					V7 := 2
 			end
@@ -219,20 +225,18 @@
 			#If attacking, check if any enemies are on the square we attacked.
 			if v7 == 2 begin
 				vd := 0
-				
-				
 			end
 			
 			if vd != 2 begin
 
 				i := playerPos
 				load v8 - v9
+				va := v3 vb := v4
 				drawMap
 				drawEnemies
-				va := v3 vb := v4
 				
 				#Moving
-				v7 == 1 begin 
+				if v7 == 1 begin 
 					v8 := v3 v9 := v4
 					
 					#Moving between areas, and spawning enemies
@@ -288,13 +292,41 @@
 
 					i := playerPos
 					save v8 - v9
-					if v7 := 0
+					#if v7 := 0
+					v7 := 0
 				end
 				
 				#Basic Attack
 				if v7 == 2 begin
-					i := enemies
+					v7 := 0
 					
+					loop
+						i := enemies
+						i += v7
+						
+						load v3 
+						if v1 == vb begin if v0 == va begin #If an enemy is in this location, that enemy gets attacked
+							i := pstr
+							load v4 - v4
+							v3 -= v4
+							if v3 > 100 begin #When a number goes below 0, it rolls over to 255. There's no way we'll deal enough damage to roll all the way down to 100, but better safe than sorry.
+								#Anyways, this enemy is dead now.
+								if v2 == 6 begin
+									#If this was THE wizard, turn the tile that he was standing on into a chest (it will contain the key!)
+									getTileID
+								end
+								v0 := 0
+								v1 := 0
+								v2 := 0
+							end
+							i := enemies
+							i += v7
+							save v3
+							v7 := enemyControlLimit
+							v7 -= 5
+						end end
+						v7 += 5
+					if v7 != enemyControlLimit then again
 					#if the enemy y = vb begin if enemy x = va
 					# vc := attack strength (based on level(?) whether or not we have the sacred sword)
 					# enemy hp -= vc
@@ -303,6 +335,7 @@
 					#  if enemy id = 6 (THE WIZARD!)
 					#   the tile turns into a chest that contains a key
 					
+					v7 := 0
 				end 
 
 				#Enemy movement
@@ -310,7 +343,6 @@
 				#  Check where the player is
 				#  Move toward the player
 				#    Movement needs to account for walls
-				v7 := 0
 				loop
 					i := enemies
 					i += v7
@@ -416,7 +448,7 @@
 				end
 			end
 			v3 := v8 v4 := v9
-			V7 := 1
+			v7 := 1
 			
 			#Delay to prevent the player from just ZOOMING across the map
 			# Copied from the default Octo example project. I only barely understand how it works.
@@ -511,7 +543,7 @@
 			load v8 - v9
 			if va == v8 then vd += 1
 			if vb == v9 then vd += 1
-			if vd != 2 begin vd := 0
+			if vd != 2 then vd := 0
 			#The player is here! Attack!
 			# Get enemy strength
 			# if player has the sacred armor then reduce attack strength
@@ -521,7 +553,7 @@
 		end end
 		
 	else
-		vd := 2 #Skulls ignore walls
+		vd := 2
 	end
 ;
 
@@ -532,9 +564,11 @@
 
 : playerPos 5 5  # x y
 
-: level 0 0 0
+: plevel 0 0 0
 
-: exp 0 0 0
+: pexp 0 0 0
+
+: pstr 1
 
 : access 10
 # This is the highest ID tile that the player (and enemies) can walk through.
@@ -555,21 +589,22 @@
 
 : bestiary
 #Example Entry: 3 HP, 5 Strength
+#Note that "0" actually translates to 1 health - the enemy will count as "dead" when its health rolls to 255.
 
 #0 = Dead or non-existant
 0 0
 
 #1 = Shrimp
-1 1
+0 1
 
 #2 = Lobster
-2 3
+2 2
 
 #3 = Waterbear
 4 5
 
 #4 = Skull
-1 10
+1 9
 
 #5 = Squid
 5 6
@@ -580,10 +615,10 @@
 : drawEnemies
 	#Erase/redraw tiles that enemies are standing on
 	#We might erase the above code and implement drawing enemies into this
-	v7 := 0
+	v5 := 0
 	loop
 		i := enemies
-		i += v7
+		i += v5
 		load v2
 		v0 -= v8 #v8 and v9 should still be holding the player position
 		v0 += 3 #Raises v0 above "negative" value
@@ -615,8 +650,8 @@
 				plane 2 sprite v0 v1 8
 				
 		end end
-		v7  += 5
-	if v7 != enemyControlLimit then again
+		v5  += 5
+	if v5 != enemyControlLimit then again
 ;
 
 
