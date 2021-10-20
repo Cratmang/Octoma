@@ -232,13 +232,16 @@
 				i := playerPos
 				load v8 - v9
 				va := v3 vb := v4
+				i := targetCo
+				save va - vb
 				drawMap
 				drawEnemies
 				
 				#Moving
 				if v7 == 1 begin 
-					v8 := v3 v9 := v4
-					
+					i := targetCo
+					load v8 - v9
+					va := v8 vb := v9
 					#Moving between areas, and spawning enemies
 					getTileID
 					if ve == 5 begin #Entering Dungeon
@@ -296,24 +299,102 @@
 					v7 := 0
 				end
 				
+				drawMap
+				
 				#Basic Attack
 				if v7 == 2 begin
 					v7 := 0
-					
+					i := targetCo
+					load va - vb
 					loop
 						i := enemies
 						i += v7
 						
 						load v3 
 						if v1 == vb begin if v0 == va begin #If an enemy is in this location, that enemy gets attacked
+							#Temporary pass off
+							v8 := v2
+							v9 := v3
+							drawEnemies
+							i := targetCo
+							load va - vb
+							v2 := v8 
+							v3 := v9
+							i := playerPos
+							load v8 - v9
+							#Brief animation that shows the player "attacking" the enemy
+							v5 := va
+							v5 -= v8 #v8 and v9 should still be holding the player position
+							v5 += 3 #Raises v0 above "negative" value
+							v5 += v5 #2
+							v5 += v5 #4
+							v5 += v5 #8
+							v5 += DRAW_START_X #Offset
+							v6 := vb
+							v6 -= v9
+							v6 += 3
+							v6 += v6
+							v6 += v6
+							v6 += v6
+							v6 += DRAW_START_Y
+							i :=  long hurtBox
+							plane 1
+							sprite v5 v6 8
+							#PLAY THE SOUND OF THEIR PAIN
+							i := long audio-hit
+							vc := 40 vd := 15
+							pitch := vc
+							audio buzzer := vd
+							vf := 9
+							delay := vf
+							loop
+								vf := delay
+								if vf != 0 then
+							again
+							#Erase the animation
+							i :=  long hurtBox
+							sprite v5 v6 8
+							v8 := v2
+							v9 := v3
+							drawEnemies
+							i := targetCo
+							load v1
+							load va - vb
+							v2 := v8 
+							v3 := v9
+							i := playerPos
+							load v8 - v9
+							
 							i := pstr
 							load v4 - v4
 							v3 -= v4
 							if v3 > 100 begin #When a number goes below 0, it rolls over to 255. There's no way we'll deal enough damage to roll all the way down to 100, but better safe than sorry.
-								#Anyways, this enemy is dead now.
-								if v2 == 6 begin
-									#If this was THE wizard, turn the tile that he was standing on into a chest (it will contain the key!)
+								#Anyways, this enemy is dead now. Time for loot!
+								if v2 == 1 begin #Shrimp - miniscule EXP, and some health back!
+								
+								end
+								if v2 == 2 begin #Lobster -
+								
+								end
+								if v2 == 3 begin #Waterbear
+								
+								end
+								if v2 == 4 begin #Skull - Lots of EXP
+								
+								end
+								if v2 == 5 begin #Squid
+								
+								end
+								if v2 == 6 begin #If this was THE wizard, turn the tile that he was standing on into a chest (it will contain the key!)
+									drawMap
+									i := targetCo
+									load va - vb
 									getTileID
+									ve := 9
+									save ve - ve
+									drawMap
+									i := targetCo
+									load v1
 								end
 								v0 := 0
 								v1 := 0
@@ -327,14 +408,6 @@
 						end end
 						v7 += 5
 					if v7 != enemyControlLimit then again
-					#if the enemy y = vb begin if enemy x = va
-					# vc := attack strength (based on level(?) whether or not we have the sacred sword)
-					# enemy hp -= vc
-					# if enemy hp > 200 (Sub for less than 0)
-					#  then enemy is dead
-					#  if enemy id = 6 (THE WIZARD!)
-					#   the tile turns into a chest that contains a key
-					
 					v7 := 0
 				end 
 
@@ -385,7 +458,7 @@
 					v7 += 5
 				if v7 != enemyControlLimit then again
 
-				drawMap
+				#drawMap
 				drawEnemies
 				i := long audio-step
 				v2 := 3
@@ -420,8 +493,10 @@
 					end
 					if v9 > 58 begin
 						#Got the key from killing the wizard!
+						drawMap
 						i := long keySprite
 						v0 := 84
+						v1 := 50
 						plane 1 sprite v0 v1 9
 						v2 := 9 i += v2
 						plane 2 sprite v0 v1 9
@@ -429,6 +504,7 @@
 						load v0
 						v0 += 1
 						save v0
+						drawMap
 					end
 
 					#Play victory jingle!
@@ -488,16 +564,16 @@
 	
 	vd := vb
 	if vb > 58 begin #The map is cut into sections 
-		i := map-castle
+		i := long map-castle
 		vd -= 59
 	else if vb > 40 begin
-		i := map-cave
+		i := long map-cave
 		vd -= 41
 	else if vb > 18 begin
-		i := map-temple
+		i := long map-temple
 		vd -= 19
 	else
-		i := map-world
+		i := long map-world
 	end end end
 	
 	vd += vd # 2
@@ -574,6 +650,8 @@
 # This is the highest ID tile that the player (and enemies) can walk through.
 # If the player gets the key from killing the Wizard, they can also walk through the locked door.
 
+: targetCo 0 0 #This is the space that the player is attacking or trying to move to.
+
 
 ### ENEMY STATS
 : enemies
@@ -617,17 +695,19 @@
 	#We might erase the above code and implement drawing enemies into this
 	v5 := 0
 	loop
+		i := playerPos
+		load va - vb
 		i := enemies
 		i += v5
 		load v2
-		v0 -= v8 #v8 and v9 should still be holding the player position
+		v0 -= va 
 		v0 += 3 #Raises v0 above "negative" value
 		if v0 < 7 begin #If the enemy is within the field of view
 			v0 += v0 #2
 			v0 += v0 #4
 			v0 += v0 #8
 			v0 += DRAW_START_X #Offset
-			v1 -= v9
+			v1 -= vb
 			v1 += 3
 			if v1 < 7 begin
 				v1 += v1
@@ -653,7 +733,6 @@
 		v5  += 5
 	if v5 != enemyControlLimit then again
 ;
-
 
 ### DRAW MAP AND TILES
 
@@ -690,6 +769,14 @@
 : drawTile
 	#v0 =screen X, v1 = screen Y, va = X, vb = Y, vc = 25 (Width of the map), vd
 	getTileID
+	
+	#Just one caveat - if this is the locked door, and the player has the key, we need to show that the door is open!
+	if ve == 11 begin
+		i := access
+		load vc - vc
+		if vc == 11 then ve := 4
+	end
+	
 	i := long tileset
 	ve += ve #2
 	ve += ve #4
@@ -785,7 +872,7 @@
 13 13 13 13 13 13 13 13 13 33 0  0  4  0  0  33 13 13 13 13 13 13 13 13
 13 13 13 33 33 33 33 33 33 33 33 33 11 33 33 33 33 33 33 33 33 33 13 13 
 13 13 13 33 0  4  0  33 33 0  0  0  4  0  0  0  33 33 0  4  0  33 13 13
-13 13 13 33 0  4  0  0  0  0  0  0  4  0  9  0  0  0  0  4  0  33 13 13
+13 13 13 33 0  4  0  0  0  0  0  0  4  0  0  0  0  0  0  4  0  33 13 13
 13 13 13 33 0  4  0  33 33 0  0  0  4  0  0  0  33 33 0  4  0  33 13 13 
 13 13 13 33 0  4  0  33 33 0  0  0  4  0  0  0  33 33 0  4  0  33 13 13
 13 13 13 33 0  4  0  33 33 33 33 33 4  33 33 33 33 33 0  4  0  33 13 13
@@ -1019,6 +1106,9 @@
 0x18 0x3C 0x7E 0xFF 0x18 0x3C 0xBD 0x66
 0x18 0x3C 0x7E 0xFF 0x24 0xBD 0x99 0x00
 
+: hurtBox
+0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF
+
 #The artifacts kind of break the 8x8 rule, since they don't need to be drawn on a grid.
 
 : swordSprite #10 px
@@ -1061,10 +1151,11 @@
 : audio-note
 255 0 255 0 255 0 255 0 255 0 255 0 255 0 255 0
 
+: audio-hit
+0x5B 0x3A 0xC5 0xC2 0x18 0x2B 0x61 0x83 0x86 0x80 0x00 0x00 0x00 0x00 0x00 0x00
 
-
-
-
+: audio-hurt
+0xDC 0x09 0x9A 0xBD 0x7E 0x04 0x05 0x7A 0x78 0x4A 0x57 0x40 0x85 0xFA 0x12 0x80
 
 
 
