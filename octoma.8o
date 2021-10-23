@@ -27,7 +27,7 @@
 
 :calc UI_START_X { DRAW_END_X + 6 }
 :const UI_HP_Y 1
-
+:calc UI_STR_Y { UI_HP_Y + 14 }
 
 :const TILE_SIZE 16
 :calc TILE_HALF { TILE_SIZE / 2 }
@@ -119,18 +119,25 @@
 	if v0 < 64 then again
 	
 	#UI TEXT (Placeholder)
-	v0 := DRAW_END_X v0 += 6 v2 := v0
+	v0 := UI_START_X v2 := v0
 	v1 := 1
 	plane 1
 	#text "HP: 0640/" 
 	draw-player-health-ui
 	plane 2
-	text "MP: 420 BLAZE IT/" 
-	text "EXP: TOO COOL/"
+	text "MP: "
 	plane 1
-	v1 -= 7
-	text "EXP: TOO COOL/"
-	text "LV: GOOD ENOUGH"
+	v1 += 1
+	i := long ui-magic-bar
+	sprite v0 v1 3
+	v0 += 25
+	sprite v0 v1 3
+	v1 += 6
+	v0 := UI_START_X
+	text "STR: 1"
+	plane 2
+	v0 := UI_START_X
+	text "STR: 1/"
 	
 	#Draw Player sprite in center of the screen
 	:macro drawPlayer {
@@ -374,11 +381,17 @@
 							i := playerPos
 							load v8 - v9
 							
-							i := pstr
+							i := hasSword
+							load vf - vf
+							if vf == 1 begin i := pSwordStr else i := pstr end
 							load v4 - v4
 							v3 -= v4
 							if v3 > 100 begin #When a number goes below 0, it rolls over to 255. There's no way we'll deal enough damage to roll all the way down to 100, but better safe than sorry.
 								#Anyways, this enemy is dead now. Time for loot!
+								:macro heal {
+									#TO-DO
+								}
+								
 								if v2 == 1 begin #Shrimp - miniscule EXP, and some health back!
 								
 								end
@@ -402,8 +415,8 @@
 									ve := 9
 									save ve - ve
 									drawMap
-									i := targetCo
-									load v1
+									#i := targetCo
+									#load v1
 								end
 								v0 := 0
 								v1 := 0
@@ -485,6 +498,18 @@
 					# Get loot dropped
 					if v9 == 33 begin
 						#Got the sword!
+						v0 := UI_START_X v0 += 19
+						v1 := UI_STR_Y
+						plane 1 text "1"
+						v0 -= 4
+						plane 2 text "1"
+						v0 -= 4
+						plane 1 text "7"
+						v0 -= 4
+						plane 2 text "7"
+						i := hasSword
+						vf := 1
+						save vf - vf
 						i := long swordSprite
 						v1 := 50
 						v0 := 66
@@ -733,10 +758,10 @@
 				if v2 > 200 begin #ROLLOVER! We lost a ten. 
 					v2 += 10 
 					v1 -= 1 
-					if v1 == 255 begin
+					if v1 > 200 begin
 						v1 := 9
 						v0 -= 1
-						if v0 == 255 begin
+						if v0 > 200 begin
 							#... I think we're straight up dead now.
 							v0 := 0
 							v1 := 0
@@ -861,6 +886,7 @@
 : gameOver
 	
 	# Draw player being dead
+	drawEnemies
 	drawPlayer
 	:macro drawPlayerDead {
 		i := long playerSprite_dead
@@ -880,6 +906,7 @@
 	
 	# Erase map and enemies
 	drawMap
+	drawEnemies
 	
 	i := long gameover-image
 	v0 := DRAW_START_X
@@ -995,6 +1022,8 @@
 : pexp 0 0 0
 
 : pstr 1
+
+: pSwordStr 7
 
 : access 10
 # This is the highest ID tile that the player (and enemies) can walk through.
@@ -1681,6 +1710,9 @@
 	
 	0xE0 0xF0 0x48 0x68 0xB0 0xC0 0x50 0x48 #R
 	0xE0 0x90 0x90 0xE0 0xC0 0xA0 0x90 0x00
+
+: ui-magic-bar
+	0x80 0x80 0x80
 
 
 ### AUDIO
