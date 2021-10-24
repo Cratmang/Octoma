@@ -224,15 +224,15 @@
 			end
 			
 			if ve == 2 begin
-					v0 := DRAW_END_X
-					v0 += 5
-					v1 := 30
-					text "DIRECTION?/"
-					v0 := DRAW_END_X
-					v0 += 5
-					text "(S) TO CANCEL"
-					ve := 0
-					V7 := 2
+				v0 := DRAW_END_X
+				v0 += 5
+				v1 := 30
+				text "DIRECTION?/"
+				v0 := DRAW_END_X
+				v0 += 5
+				text "(S) TO CANCEL"
+				ve := 0
+				V7 := 2
 			end
 		if ve != 0 then again
 		
@@ -390,24 +390,44 @@
 								#Anyways, this enemy is dead now. Time for loot!
 								:macro heal {
 									#TO-DO
+									draw-player-health-ui
+									i := health
+									load v2
+									v2 += vc
+									if v2 > 9 begin v2 -= 10 v1 += 1 end
+									v1 += vd
+									if v1 > 9 begin v1 -= 10 v0 += 1 end
+									i := healthMax
+									load vf - vf
+									if v0 == vf then load v2
+									i := health
+									save v2		
+									draw-player-health-ui							
 								}
 								
 								if v2 == 1 begin #Shrimp - miniscule EXP, and some health back!
-								
+									vd := 0 vc := 5
+									heal
 								end
 								if v2 == 2 begin #Lobster -
-								
+									vd := 0 vc := 7
+									heal
 								end
 								if v2 == 3 begin #Waterbear
-								
+									vd := 1 vc := 2
+									heal
 								end
 								if v2 == 4 begin #Skull - Lots of EXP
-								
+									vd := 0 vc := 1
+									heal
 								end
 								if v2 == 5 begin #Squid
-								
+									vd := 1 vc := 3
+									heal
 								end
 								if v2 == 6 begin #If this was THE wizard, turn the tile that he was standing on into a chest (it will contain the key!)
+									vd := 2 vd := 5
+									heal
 									drawMap
 									i := targetCo
 									load va - vb
@@ -521,25 +541,18 @@
 						#Got the armor!
 						draw-player-health-ui
 						#Increase health and max health, then set has armor to true
-						i := healthArmIncrease
-						load v3 - v4
+						
 						i := health
-						load v2
-						v2 += v4
-						if v2 > 9 begin v2 -= 10 v1 += 1 end
-						v1 += v3
-						if v1 > 9 begin v1 -= 10 v0 += 1 end
-						save v2
+						load v0
+						v0 += 1
+						save v0
 						i := healthMax
-						load v2
-						v2 += v4
-						if v2 > 9 begin v2 -= 10 v1 += 1 end
-						v1 += v3
-						if v1 > 9 begin v1 -= 10 v0 += 1 end
-						save v2
+						load v0
+						v0 += 1 
+						save v0
 						i := hasArmor
-						vf := 1
-						save vf - vf
+						v0 := 1
+						save v0
 						draw-player-health-ui
 						
 						v1 := 50
@@ -770,6 +783,18 @@
 				save v2
 				if v0 == 0 begin if v1 == 0 begin if v2 == 0 begin draw-player-health-ui gameOver end end end
 				draw-player-health-ui
+				#v0 := DRAW_CENTER_X
+				#v1 := DRAW_CENTER_Y
+				#i := long hurtBox
+				#plane 1 sprite v0 v1 8
+				#i := long audio-hurt
+				#v2 := 10
+				#v1 := 50 pitch := v1
+				#audio buzzer := v2
+				#v0 := DRAW_CENTER_X
+				#v1 := DRAW_CENTER_Y
+				#i := long hurtBox
+				#plane 1 sprite v0 v1 8
 			end
 			# Get enemy strength
 			# if player has the sacred armor then reduce attack strength
@@ -1013,7 +1038,7 @@
 
 : healthMax 1 0 0
 
-: healthArmIncrease 7 5
+#: healthArmIncrease 2 I was gonna do an individual value, but it's probably easier to just increase health and max health by a flat hardcoded 100.
 
 : playerPos 5 5  # x y
 
@@ -1060,16 +1085,16 @@
 2 2
 
 #3 = Waterbear
-4 5
+15 5
 
 #4 = Skull
 1 15
 
 #5 = Squid
-5 12
+10 12
 
 #6 = Wizard
-10 17
+30 17
 
 
 ### WORLD MAP
