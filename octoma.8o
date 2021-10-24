@@ -27,12 +27,42 @@
 
 :calc UI_START_X { DRAW_END_X + 6 }
 :const UI_HP_Y 1
+:calc UI_MP_X { UI_START_X + 14 }
+:calc UI_MP_Y { UI_HP_Y + 8 }
 :calc UI_STR_Y { UI_HP_Y + 14 }
 
 :const TILE_SIZE 16
 :calc TILE_HALF { TILE_SIZE / 2 }
 :const MAP_WIDTH 24
 
+###  PLAYER STATS
+
+: health 1 0 0 #Each digit is an individual byte because it makes them all easier to convert to a string and print.
+
+: healthMax 1 0 0
+
+#: healthArmIncrease 2 I was gonna do an individual value, but it's probably easier to just increase health and max health by a flat hardcoded 100.
+
+: magic 0
+
+:const magicMax 25
+
+:const magicStr 5
+
+: playerPos 5 5  # x y
+
+:const pstr 1
+
+:const pSwordStr 7
+
+: access 10
+# This is the highest ID tile that the player (and enemies) can walk through.
+# If the player gets the key from killing the Wizard, they can also walk through the locked door.
+
+: targetCo 0 0 #This is the space that the player is attacking or trying to move to.
+
+: hasSword 0
+: hasArmor 0
 
 : font
 	0x40 0xA0 0xE0 0xA0 0xA0  0x80 0x80 0xC0 0xA0 0xC0  0x60 0x80 0x80 0x80 0x60  0xC0 0xA0 0xA0 0xA0 0xC0 # A B C D
@@ -72,6 +102,20 @@
 
 : main
 	hires
+	
+	#:macro gameby { 
+	#	v0 := 24
+	#	v1 := 12
+	#	plane 1
+	#	text "A GAME BY CRATMANG//"
+	#	v0 -= 10
+	#	text "BASED ON ULTMA BY LORD BRITISH"
+	#}
+	#gameby
+	#vf := 20 
+	#long delay-loop
+	#gameby
+	
 	
 	#loop #Game reset loop
 	#Draw Frame 
@@ -122,15 +166,15 @@
 	v0 := UI_START_X v2 := v0
 	v1 := 1
 	plane 1
-	#text "HP: 0640/" 
 	draw-player-health-ui
 	plane 2
-	text "MP: "
+	text "/MP: "
 	plane 1
-	v1 += 1
+	v0 := UI_MP_X
+	v1 := UI_MP_Y
 	i := long ui-magic-bar
 	sprite v0 v1 3
-	v0 += 25
+	v0 += magicMax
 	sprite v0 v1 3
 	v1 += 6
 	v0 := UI_START_X
@@ -175,11 +219,7 @@
 	
 	#Game start!
 	loop
-		
-		
-		#Basic attack
-		v0 := OCTO_KEY_1 if v0 key begin
-			ve := 1
+		:macro askDirection {
 			plane 1
 			v0 := DRAW_END_X
 			v0 += 5
@@ -187,7 +227,18 @@
 			text "DIRECTION?/"
 			v0 := DRAW_END_X
 			v0 += 5
-			text "(S) TO CANCEL"
+			text "(Q) TO CANCEL"
+		}
+		
+		#Basic attack
+		v0 := OCTO_KEY_1 if v0 key begin
+			ve := 1
+			askDirection
+		end
+		
+		#Magic Blast
+		v0 := OCTO_KEY_2 if v0 key begin
+		
 		end
 		
 		loop
@@ -219,18 +270,13 @@
 			
 			if ve == 1 begin
 				v0 := OCTO_KEY_Q if v0 key begin
-					ve := 2
+					ve := 0
+					askDirection
 				end
 			end
 			
 			if ve == 2 begin
-				v0 := DRAW_END_X
-				v0 += 5
-				v1 := 30
-				text "DIRECTION?/"
-				v0 := DRAW_END_X
-				v0 += 5
-				text "(S) TO CANCEL"
+				askDirection
 				ve := 0
 				V7 := 2
 			end
@@ -383,8 +429,7 @@
 							
 							i := hasSword
 							load vf - vf
-							if vf == 1 begin i := pSwordStr else i := pstr end
-							load v4 - v4
+							if vf == 1 begin v4 := pSwordStr else v4 := pstr end
 							v3 -= v4
 							if v3 > 100 begin #When a number goes below 0, it rolls over to 255. There's no way we'll deal enough damage to roll all the way down to 100, but better safe than sorry.
 								#Anyways, this enemy is dead now. Time for loot!
@@ -406,15 +451,15 @@
 								}
 								
 								if v2 == 1 begin #Shrimp - miniscule EXP, and some health back!
-									vd := 0 vc := 5
+									vd := 0 vc := 3
 									heal
 								end
 								if v2 == 2 begin #Lobster -
-									vd := 0 vc := 7
+									vd := 0 vc := 5
 									heal
 								end
 								if v2 == 3 begin #Waterbear
-									vd := 1 vc := 2
+									vd := 0 vc := 8
 									heal
 								end
 								if v2 == 4 begin #Skull - Lots of EXP
@@ -422,7 +467,7 @@
 									heal
 								end
 								if v2 == 5 begin #Squid
-									vd := 1 vc := 3
+									vd := 1 vc := 0
 									heal
 								end
 								if v2 == 6 begin #If this was THE wizard, turn the tile that he was standing on into a chest (it will contain the key!)
@@ -438,6 +483,14 @@
 									#i := targetCo
 									#load v1
 								end
+								#Increase magic
+								draw-player-magic-ui
+								i := magic
+								load v0
+								if v0 != magicMax then v0 += 1
+								save v0
+								draw-player-magic-ui
+								
 								v0 := 0
 								v1 := 0
 								v2 := 0
@@ -783,18 +836,6 @@
 				save v2
 				if v0 == 0 begin if v1 == 0 begin if v2 == 0 begin draw-player-health-ui gameOver end end end
 				draw-player-health-ui
-				#v0 := DRAW_CENTER_X
-				#v1 := DRAW_CENTER_Y
-				#i := long hurtBox
-				#plane 1 sprite v0 v1 8
-				#i := long audio-hurt
-				#v2 := 10
-				#v1 := 50 pitch := v1
-				#audio buzzer := v2
-				#v0 := DRAW_CENTER_X
-				#v1 := DRAW_CENTER_Y
-				#i := long hurtBox
-				#plane 1 sprite v0 v1 8
 			end
 			# Get enemy strength
 			# if player has the sacred armor then reduce attack strength
@@ -1015,7 +1056,20 @@
 	load v2 - v2 number-to-string
 	i := healthMax i += v1 i += v1
 	load v2 - v2 number-to-string
-	text "/"
+;
+
+: draw-player-magic-ui
+	i := magic
+	plane 2
+	load v2 - v2
+	v3 := v2
+	v0 := UI_MP_X v1 := UI_MP_Y
+	i := long ui-magic-bar
+	loop while v3 != 0
+		sprite v0 v1 3
+		v0 += 1
+		v3 -= 1
+	again
 ;
 
 : number-to-string #Uses vf, plus v0 and v1 for drawing the numbers
@@ -1032,32 +1086,7 @@
 	#It occours to me that vf changes based on factors I do not fully understand. We'll see if drawing with text causes weird stuff to happen
 ;
 
-###  PLAYER STATS
 
-: health 1 0 0
-
-: healthMax 1 0 0
-
-#: healthArmIncrease 2 I was gonna do an individual value, but it's probably easier to just increase health and max health by a flat hardcoded 100.
-
-: playerPos 5 5  # x y
-
-: plevel 0 0 0
-
-: pexp 0 0 0
-
-: pstr 1
-
-: pSwordStr 7
-
-: access 10
-# This is the highest ID tile that the player (and enemies) can walk through.
-# If the player gets the key from killing the Wizard, they can also walk through the locked door.
-
-: targetCo 0 0 #This is the space that the player is attacking or trying to move to.
-
-: hasSword 0
-: hasArmor 0
 
 ### ENEMY STATS
 : enemies
