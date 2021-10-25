@@ -5,6 +5,8 @@
 #
 #######
 
+# This game and its material are distributed under a Creative Commons 0 "No Rights Reserved" license.
+
 # It is HIGHLY recommded that you play the game on LUDICROUS SPEED, otherwise the game will be far too slow.
 #  (500-1000 cycles/frame might work, but may also trigger epilepsy)
 
@@ -181,6 +183,7 @@
 	#UI TEXT
 	v0 := UI_START_X v2 := v0
 	v1 := 1
+	plane 1
 	draw-player-health-ui
 	v1 := UI_STR_Y
 	v0 := UI_START_X
@@ -231,7 +234,7 @@
 			text "DIRECTION?/"
 			v0 := DRAW_END_X
 			v0 += 5
-			text "(Q) TO CANCEL"
+			text "(4) TO CANCEL"
 		}
 		
 		#Basic attack
@@ -257,7 +260,7 @@
 				v7 := 1
 				if ve == 1 then ve := 2
 			end
-			v0 := OCTO_KEY_X if v0 key begin
+			v0 := OCTO_KEY_S if v0 key begin
 				v4 += 1
 				v7 := 1
 				if ve == 1 then ve := 2
@@ -267,13 +270,13 @@
 				v7 := 1
 				if ve == 1 then ve := 2
 			end
-			v0 := OCTO_KEY_S if v0 key begin
+			v0 := OCTO_KEY_Q if v0 key begin
 				#No movement
 				if ve != 1 then v7 := 1
 			end
 			
 			if ve == 1 begin
-				v0 := OCTO_KEY_Q if v0 key begin
+				v0 := OCTO_KEY_4 if v0 key begin
 					ve := 0
 					askDirection
 				end
@@ -439,6 +442,7 @@
 								#Anyways, this enemy is dead now. Time for loot!
 								:macro heal {
 									#TO-DO
+									plane 1
 									draw-player-health-ui
 									i := health
 									load v2
@@ -549,8 +553,7 @@
 
 					v7 += 4
 				if v7 != enemyControlLimit then again
-
-				#drawMap
+				
 				drawEnemies
 				i := long audio-step
 				v2 := 3
@@ -585,6 +588,7 @@
 					end
 					if v9 == 46 begin
 						#Got the armor!
+						plane 1
 						draw-player-health-ui
 						#Increase health and max health, then set has armor to true
 						
@@ -710,9 +714,6 @@
 		v0 += 8
 	 if v0 != DRAW_END_X then again
 	 please-play-again
-	 #plane 1 clear
-	 #plane 2 clear
-	 #again
 
 : spawnEnemy
 	#Assumes that i is already set to the list of enemies to spawn, otherwise we're gonna have a problem.
@@ -807,8 +808,8 @@
 					ve -= 10
 					if ve > 200 then ve := 0
 				end
-				#"Animation"
 				#NOW TO DEAL THE DAMAGE!
+				plane 1
 				draw-player-health-ui
 				i := health
 				load v2
@@ -829,12 +830,27 @@
 				save v2
 				if v0 == 0 begin if v1 == 0 begin if v2 == 0 begin draw-player-health-ui gameOver end end end
 				draw-player-health-ui
+				#"Animation"
+				plane 2 draw-player-health-ui
+				i := long audio-hurt
+				v1 := 64 v2 := 15
+				pitch := v1
+				audio buzzer := v2
+	 			drawEnemies
+				v0 := DRAW_CENTER_X
+				v1 := DRAW_CENTER_Y
+				plane 1 i := long hurtBox
+				sprite v0 v1 8
+				vf := 9
+				delay-loop
+				drawEnemies
+				v0 := DRAW_CENTER_X
+				v1 := DRAW_CENTER_Y
+				plane 1 i := long hurtBox
+				sprite v0 v1 8
+				plane 2 draw-player-health-ui
+				vd := 2
 			end
-			# Get enemy strength
-			# if player has the sacred armor then reduce attack strength
-			# reduce player health by attack strength
-			# play hurt sound
-			
 		end end
 		
 	else
@@ -1033,7 +1049,6 @@
 : draw-player-health-ui
 	v0 := DRAW_END_X v0 += 6
 	v1 := 1
-	plane 1
 	text "HP:"
 	# Draw Current Health
 	i := health
